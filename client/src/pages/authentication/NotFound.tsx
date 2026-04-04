@@ -1,0 +1,27 @@
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+
+const NotFound = () => {
+  return (
+    <div className="min-h-screen flex items-center justify-center  text-white">
+      <Helmet>
+        <title>404 Not Found | ISA-India</title>
+        <meta name="description" content="Page not found." />
+      </Helmet>
+      {/* <StarBackground /> */}
+      <div className="text-center px-4">
+        <h1 className="text-9xl font-bold mb-4 text-space-accent">404</h1>
+        <p className="text-3xl mb-6">Houston, we have a problem!</p>
+        <p className="text-xl text-gray-400 mb-8 max-w-lg mx-auto">
+          The page you are looking for has been lost in space or doesn't exist.
+        </p>
+        <Button asChild className="bg-space-accent hover:bg-space-accent/80 text-white px-8 py-6 text-lg">
+          <Link to="/">Return to Mission Control</Link>
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default NotFound;

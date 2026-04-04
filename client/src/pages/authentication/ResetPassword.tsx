@@ -5,6 +5,7 @@ import api from "@/lib/api";
 
 const ResetPassword = () => {
   const { token } = useParams();
+  console.log("token for pass reset",token)
 
   const [form, setForm] = useState({ newPassword: "", confirmPassword: "" });
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log(token);
 
     if (form.newPassword !== form.confirmPassword) {
       toast({

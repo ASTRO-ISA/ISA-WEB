@@ -2,9 +2,9 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import Spinner from "@/components/ui/Spinner";
 import { useToast } from "@/hooks/use-toast";
-import axios from "axios";
 import api from "@/lib/api";
 import { Helmet } from "react-helmet-async";
+import { useNavigate } from "react-router-dom";
 
 const UserPicUpload = () => {
   const [userPicCaption, setUserPicCaption] = useState("");
@@ -13,6 +13,7 @@ const UserPicUpload = () => {
   const [userPicPreviewUrl, setUserPicPreviewUrl] = useState<string | null>(null);
   const [userPicLoading, setUserPicLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const userPicFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -123,6 +124,7 @@ const UserPicUpload = () => {
       if (userPicFileInputRef.current) {
         userPicFileInputRef.current.value = "";
       }
+      navigate('/');
     } catch (err: any) {
       toast({ 
         title: "Can't upload image.",

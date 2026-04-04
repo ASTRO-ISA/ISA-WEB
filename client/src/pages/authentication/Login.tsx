@@ -44,21 +44,21 @@ const Login = () => {
         variant: "destructive"
       })
 
-      // if (err.response && err.response.status === 403) {
-      //   // redirect to OTP page with email
-      //   navigate(`/otp-verification/${form.email}`);
-      //   toast({
-      //     title: "Verify your account",
-      //     description: "Please verify your email with the OTP sent.",
-      //     variant: "destructive",
-      //   });
-      // } else {
-      //   toast({
-      //     title: "Login failed",
-      //     description: "Invalid credentials",
-      //     variant: "destructive",
-      //   });
-      // }
+      if (err.response && err.response.status === 403) {
+        // redirect to OTP page with email
+        navigate(`/otp-verification/${form.email}`);
+        toast({
+          title: "Verify your account",
+          description: "Please verify your email with the OTP sent.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login failed",
+          description: "Invalid credentials",
+          variant: "destructive",
+        });
+      }
     }
   };
 

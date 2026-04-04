@@ -43,12 +43,13 @@ const Signup = ({ url = "/auth/signup" }) => {
         },
         withCredentials: true,
       });
-      setSigningIn(false);
-      await refetchUser();
+      // setSigningIn(false);
+      // await refetchUser();
       toast({
-        description: "Account created successfully."
+        description: "Signup successful. Please verify your email with OTP."
       })
-      navigate("/");
+      // navigate("/");
+      navigate(`/otp-verification/${form.email}`);
     } catch (err) {
       // console.error("Something went wrong", err);
       toast({
@@ -82,7 +83,7 @@ const Signup = ({ url = "/auth/signup" }) => {
                 name="name"
                 value={form.name}
                 onChange={handleChange}
-                placeholder="John Doe"
+                placeholder="Rakesh Sharma"
                 required
                 className="w-full px-4 py-2 bg-space-purple/20 border border-space-purple/50 rounded-md focus:outline-none focus:ring-2 focus:ring-space-accent"
               />

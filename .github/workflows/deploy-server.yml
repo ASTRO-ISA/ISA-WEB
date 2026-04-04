@@ -1,0 +1,32 @@
+name: Deploy Node Server to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploying to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            # 1. Navigate to the root of the repo to execute Git commands
+            cd /home/ubuntu/your-monorepo
+            
+            # 2. Pull the latest code (Sparse-checkout will only grab the server folder updates)
+            git pull origin main
+            
+            # 3. Go into the server folder to install packages
+            cd server
+            npm install
+            
+            # 4. Restart the server
+            pm2 restart api-server

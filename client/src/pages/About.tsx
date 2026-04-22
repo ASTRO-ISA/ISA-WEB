@@ -7,91 +7,6 @@ import { Helmet } from "react-helmet-async";
 import TeamsSection from "@/components/TeamsSection";
 
 const About = () => {
-  const leaders = [
-    {
-      name: "Jayaditya Malviya",
-      role: "Founder & President",
-      image: "/images/jayaditya.jpeg",
-      github: "https://github.com/sunnyjhl",
-      linkedin: "https://www.linkedin.com/in/jayaditya-malviya",
-    },
-    {
-      name: "Aditi Khare",
-      role: "Cofounder & Core Team",
-      image: "/images/aditi.jpeg",
-      github: "https://github.com/aditikhare137",
-      linkedin: "https://www.linkedin.com/in/aditikhare137",
-    }
-  ]
-  const teamMembers = [
-    {
-      name: "Vinod Mali",
-      role: "Full Stack Developer",
-      image: "/images/vinod.png",
-      github: "https://github.com/vinodM09",
-      linkedin: "https://www.linkedin.com/in/vinodm09",
-    },
-    {
-      name: "Suyash Nagar",
-      role: "Full Stack Developer",
-      image: "/images/suyash.png",
-      github: "https://github.com/suysah",
-      linkedin: "https://www.linkedin.com/in/suyash-nagar-867027256/",
-    }
-  ];
-
-  const contributors = [
-    {
-      name: "Naman Meravi",
-      role: "Backend Developer",
-      image: "/images/naman.png",
-      github: "https://github.com/NamanMeravi",
-      linkedin: "https://www.linkedin.com/in/naman-meravi-660a1b257/",
-    },
-    {
-      name: "Anadi Gupta",
-      role: "Frontend Developer",
-      image: "/images/anadi.png",
-      github: "https://github.com/Anadi-Gupta1",
-      linkedin: "https://www.linkedin.com/in/anadigupta/",
-    },
-  ]
-
-  const clubDepartments = [
-    {
-      name: "Chanchal Bairagi",
-      role: "Core Team Member",
-      image: "/images/Chanchal.png",
-      github: "https://github.com/lisawang",
-      linkedin: "https://www.linkedin.com/in/chanchal-bairagi-1502b8293",
-    },
-    {
-      name: "Akshay Jain",
-      role: "Core Team Member",
-      image: "/images/Akshay.png",
-      github: "https://github.com/Akshay-Jain08",
-      linkedin: "https://www.linkedin.com/in/akshay-jain-88776b20b",
-    },
-    {
-      name: "Amit Kumar",
-      role: "Core Team Member",
-      image: "/images/Amit.png",
-      github: "https://github.com/amitakr0027",
-      linkedin: "http://www.linkedin.com/in/amitkumar0027",
-    },
-    {
-      name: "Akshat Shevalkar",
-      role: "Team Lead - Technical Department",
-      image: "/images/Akshat.png",
-      linkedin: "https://www.linkedin.com/in/akshat-shevalkar-380711329",
-    },
-    {
-      name: "Srijan Mishra",
-      role: "Technical Team Member",
-      image: "/images/Srijan.png",
-      linkedin: "https://www.linkedin.com/in/srijan-mishra-7b95692b5",
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-space-purple/20 via-space-dark to-space-accent/20 text-white pt-20">
@@ -138,7 +53,7 @@ const About = () => {
               <Card className="cosmic-card bg-gradient-to-br from-space-purple/20 to-space-dark p-6 h-full hover:scale-105 transition-transform duration-300">
                 <CardContent>
                   <h3 className="text-2xl font-bold mb-2">
-                    Rocketry Division (Technical)
+                    Rocketry Division (Eureka)
                   </h3>
                   <p className="text-space-light mb-4">
                     The Rocketry Division of ISA focuses on the technical and
@@ -172,7 +87,7 @@ const About = () => {
               <Card className="cosmic-card bg-gradient-to-br from-space-purple/20 to-space-dark p-6 h-full hover:scale-105 transition-transform duration-300">
                 <CardContent>
                   <h3 className="text-2xl font-bold mb-2">
-                    Astronomy Division (Space Knowledge & Exploration)
+                    Astronomy Division (AstroNova)
                   </h3>
                   <p className="text-space-light mb-4">
                     The Astronomy Division of ISA is designed for those who are
@@ -278,16 +193,16 @@ const About = () => {
       </section>
 
             {/* Meet Our Team - 1 */}
-            <TeamsSection department={leaders} teamName={"Founders"}/>
+            {/* <TeamsSection department={leaders} teamName={"Founders"}/> */}
 
             {/* Meet Our Team */}
-            <TeamsSection department={teamMembers} teamName={"Developers"}/>
+            {/* <TeamsSection department={teamMembers} teamName={"Developers"}/> */}
 
             {/* Club Department Team */}
-            <TeamsSection department={clubDepartments} teamName={"Core Team"}/>
+            {/* <TeamsSection department={clubDepartments} teamName={"Core Team"}/> */}
 
             {/* Contributors */}
-            <TeamsSection department={contributors} teamName={"Contributors"}/>
+            {/* <TeamsSection department={contributors} teamName={"Contributors"}/> */}
 
       <section className="py-20">
         <div className="container mx-auto px-4">
@@ -302,7 +217,7 @@ const About = () => {
               Join Our Online Community
             </h2>
             <p className="text-xl text-space-light mb-8 max-w-2xl mx-auto">
-              Connect with ISA Club members through our social platforms for
+              Connect with ISA Community members through our social platforms for
               daily updates, discussions, and astronomy content.
             </p>
 

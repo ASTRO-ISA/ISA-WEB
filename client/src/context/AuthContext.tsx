@@ -43,6 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     queryKey: ["user-info"],
     queryFn: fetchCurrentUser,
     retry: false,
+    staleTime: 1000 * 60 * 5, // keep data fresh for 5 minutes
+    refetchOnWindowFocus: false, // don't refeach eveytime user switch a tab
+    refetchOnReconnect: false // if user disconnect or connect to a wifi, do not refetch
   });
 
   const logout = async () => {

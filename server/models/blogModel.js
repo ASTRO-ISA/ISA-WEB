@@ -57,7 +57,13 @@ const blogSchema = new mongoose.Schema({
   adminComment: {
     type: String,
     default: 'No specific reason provide.'
-  }
+  },
+  likes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ]
 })
 
 // if somehow we missed setting slug

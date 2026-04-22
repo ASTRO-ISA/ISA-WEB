@@ -81,7 +81,7 @@ const POTDSection = () => {
         </h2>
         <p className="text-xl hidden md:block text-gray-400 max-w-3xl mx-auto">
           A daily glimpse into the wonders of space from official NASA
-          selections to exceptional images by our own club members.
+          selections to exceptional images by our own community members.
         </p>
       </div>
 
@@ -118,7 +118,7 @@ const POTDSection = () => {
           </div>
         )}
 
-        {/* Club Featured Card */}
+        {/* Community Featured Card */}
         {featuredImageData && (
           <div className="cosmic-card overflow-hidden shadow-lg">
             <div
@@ -127,7 +127,7 @@ const POTDSection = () => {
             >
               <img
                 src={featuredImageData.imageUrl}
-                alt="Featured by Club Member"
+                alt="Featured by Community Member"
                 loading="lazy"
                 className="w-full h-full object-cover"
               />
@@ -138,7 +138,7 @@ const POTDSection = () => {
                 Featured Pic
               </p>
               <h3 className="text-lg sm:text-xl font-bold mb-2">
-                Club Member’s Featured Picture
+                Community Member’s Featured Picture
               </h3>
               <p className="text-sm text-gray-400 mb-3">
                 {featuredImageData.caption}
@@ -166,7 +166,7 @@ const POTDSection = () => {
                   <h4 className="text-sm font-semibold">
                     <a href={featuredImageData.socialLink} className="text-white hover:text-space-accent">{featuredImageData.author?.name}</a>
                   </h4>
-                  <p className="text-xs text-gray-400 mb-2">ISA Club</p>
+                  <p className="text-xs text-gray-400 mb-2">ISA Community</p>
                 </div>
               </div>
               <hr className="mb-2" />

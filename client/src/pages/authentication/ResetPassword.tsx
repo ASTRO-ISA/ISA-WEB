@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
 
 const ResetPassword = () => {
   const { token } = useParams();
-  console.log("token for pass reset",token)
 
   const [form, setForm] = useState({ newPassword: "", confirmPassword: "" });
   const navigate = useNavigate();
@@ -17,8 +16,6 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(token);
-
     if (form.newPassword !== form.confirmPassword) {
       toast({
         title: "Passwords do not match",

@@ -236,12 +236,12 @@ const Footer = () => {
             {isLoggedIn && isSubscribedToNewsletter ? (
               <p className="text-gray-400 mb-4">
                 You will be first to recieve updates on astronomical events and
-                club activities.
+                community activities.
               </p>
             ) : (
               <p className="text-gray-400 mb-4">
                 Subscribe to our newsletter for updates on astronomical events
-                and club activities.
+                and community activities.
               </p>
             )}
             <div className="flex flex-col space-y-3">

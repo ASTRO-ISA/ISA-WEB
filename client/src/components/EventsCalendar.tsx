@@ -5,7 +5,6 @@ import { Skeleton } from "@mui/material";
 
 const EventsCalendar = () => {
   const [launches, setLaunches] = useState([]);
-  console.log(launches);
   const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
 

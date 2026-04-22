@@ -177,7 +177,7 @@ const handlePaidRegister = async (userId, event) => {
             Astronomical Events & Meetups
           </h1>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Stay updated with upcoming astronomical phenomena and ISA club
+            Stay updated with upcoming astronomical phenomena and ISA community
             events.
           </p>
         </div>

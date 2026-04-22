@@ -229,3 +229,36 @@ exports.userBlogs = async (req, res) => {
       .json({ message: 'Server error finding user blogs.', error: err.message })
   }
 }
+
+exports.likeBlog = async (req, res) => {
+  try {
+    const { id } = req.params
+    const userId = req.user.id
+    const blog = await Blog.findById(id)
+    if (!blog) return res.status(404).json({ message: 'Blog not found' })
+
+    if (blog.likes.map(String).includes(String(userId))) {
+      return res.status(400).json({ message: 'Already liked' })
+    }
+    blog.likes.push(userId)
+    await blog.save()
+    res.status(200).json({ likes: blog.likes.length })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error liking blog', error: err.message })
+  }
+}
+
+exports.unlikeBlog = async (req, res) => {
+  try {
+    const { id } = req.params
+    const userId = req.user.id
+    const blog = await Blog.findById(id)
+    if (!blog) return res.status(404).json({ message: 'Blog not found' })
+
+    blog.likes = blog.likes.filter((uid) => String(uid) !== String(userId))
+    await blog.save()
+    res.status(200).json({ likes: blog.likes.length })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error unliking blog', error: err.message })
+  }
+}

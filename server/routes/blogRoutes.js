@@ -36,8 +36,11 @@ router
     blogController.createBlog
   )
 router.route('/delete/:id').delete(blogController.deleteBlog)
+router.route('/like/:id').post(blogController.likeBlog)
+router.route('/unlike/:id').delete(blogController.unlikeBlog)
 
 router.use(restrictTo(['admin', 'super-admin']))
 router.route('/status/:id').patch(blogController.changeStatus)
 
 module.exports = router
+

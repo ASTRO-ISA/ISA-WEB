@@ -1,4 +1,4 @@
-name: Deploy Node Server to EC2
+name: Deploy Node Server via AWS SSM (OIDC)
 
 on:
   push:
@@ -7,26 +7,31 @@ on:
     paths:
       - 'server/**'
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploying to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configure AWS Credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          script: |
-            # Navigate to the root of the repo to execute Git commands
-            cd /home/ubuntu/ISA-WEB
-            
-            # Pull the latest code (Sparse-checkout will only grab the server folder updates)
-            git pull origin main
-            
-            # Go into the server folder to install packages
-            cd server
-            npm install
-            
-            # Restart the server
-            pm2 restart api_server
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Send Deployment Command via SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploying backend from GitHub Actions" \
+            --parameters commands=[ \
+              "runuser -l ubuntu -c 'cd /home/ubuntu/ISA-WEB/server && git pull origin main'", \
+              "runuser -l ubuntu -c 'cd /home/ubuntu/ISA-WEB/server && npm install'", \
+              "runuser -l ubuntu -c 'cd /home/ubuntu/ISA-WEB/server && pm2 restart api_server'" \
+            ] \
+            --timeout-seconds 60 \
+            --max-concurrency "50" \
+            --max-errors "0"

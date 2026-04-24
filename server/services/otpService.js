@@ -16,9 +16,9 @@ exports.sendOtp = async (email, sendEmailFn) => {
   )
 
   const html = `
-    <p>Hello User,</p>
+    <p>Hey,</p>
     <p>Your OTP is <b>${otp}</b>. It expires in 5 minutes.</p>
-    <p>Best regards,<br>Team ISA</p>
+    <p>Best regards,<br>ISA</p>
   `
 
   await sendEmailFn(email, 'Your OTP Code', html)

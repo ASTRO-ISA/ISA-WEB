@@ -27,11 +27,7 @@ jobs:
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploying backend from GitHub Actions" \
-            --parameters commands=[ \
-              "runuser -l ubuntu -c 'cd /home/ubuntu/ISA-WEB/server && git pull origin main'", \
-              "runuser -l ubuntu -c 'cd /home/ubuntu/ISA-WEB/server && npm install'", \
-              "runuser -l ubuntu -c 'cd /home/ubuntu/ISA-WEB/server && pm2 restart api_server'" \
-            ] \
+            --parameters commands=["sudo -u ubuntu bash -c 'cd /home/ubuntu/ISA-WEB/server && git pull origin main && npm install && pm2 restart api_server'"] \
             --timeout-seconds 60 \
             --max-concurrency "50" \
             --max-errors "0"

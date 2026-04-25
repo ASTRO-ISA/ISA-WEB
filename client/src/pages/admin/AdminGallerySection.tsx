@@ -39,6 +39,8 @@ const AdminGallerySection = () => {
   const [featuredImageData, setFeaturedImageData] = useState([]);
   const featuredFileInputRef = useRef(null);
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -96,6 +98,7 @@ const AdminGallerySection = () => {
       setCaptionInputValue("");
       setSelectedFile(null);
       setPreviewUrl(null);
+      setRefreshTrigger(prev => prev + 1);
       toast({ title: "Image Uploaded Successfully." });
     } catch (err) {
       console.error("Error uploading image", err);
@@ -110,6 +113,7 @@ const AdminGallerySection = () => {
       setDeletingId(id);
       await api.delete(`/gallery/${id}`);
       setImages((prev) => prev.filter((img) => img._id !== id));
+      setRefreshTrigger(prev => prev + 1);
       toast({ title: "Deleted Successfully." });
       setDeletingId(null);
     } catch (err) {
@@ -192,14 +196,12 @@ const AdminGallerySection = () => {
     const res = await api.get("/gallery", {
       withCredentials: true,
     });
-    setImages(
-      res.data.map((img) => ({
-        _id: img._id,
-        src: img.imageUrl,
-        caption: img.caption || "",
-      }))
-    );
+    setImages([res.data.data]);
   };
+
+  useEffect(() => {
+    fetchImages();
+  }, [refreshTrigger]);
 
   const fetchUserPicsForPotd = async () => {
     const res = await api.get("/user-potd-pics/", {
@@ -323,14 +325,14 @@ const AdminGallerySection = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {images.map((image, i) => (
+              {images[0].map((image, i) => (
                 <div
-                  key={image._id}
+                  key={image.caption}
                   className="group overflow-hidden rounded-lg relative animate-fade-in"
                   style={{ animationDelay: `${i * 0.1}s` }}
                 >
                   <img
-                    src={image.src}
+                    src={image.imageUrl}
                     alt={image.caption}
                     onClick={() => {
                       setOpen(true);
@@ -361,7 +363,7 @@ const AdminGallerySection = () => {
               open={open}
               close={() => setOpen(false)}
               index={index}
-              slides={images.map((img) => ({ src: img.src, type: "image" }))}
+              slides={images[0].map((img) => ({ src: img.imageUrl, type: "image" }))}
             />
           </>
         )}

@@ -10,7 +10,7 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-space-purple/20 via-space-dark to-space-accent/20 text-white pt-20">
-      
+
       <Helmet>
         <title>About | ISA-India</title>
         <meta name="description" content="Learn about ISA-India's mission to expand access to space education in India." />
@@ -42,7 +42,7 @@ const About = () => {
       <section className="py-20 text-white">
         <div className="container mx-auto px-4">
           {/* Rocketry & Astronomy Sections */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
             {/* Rocketry */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -107,6 +107,34 @@ const About = () => {
                       Organizing and attending stargazing events and space talks
                     </li>
                     <li>Conducting awareness programs and public lectures</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* SpaceScript Division */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <Card className="cosmic-card bg-gradient-to-br from-space-purple/20 to-space-dark p-6 h-full hover:scale-105 transition-transform duration-300">
+                <CardContent>
+                  <h3 className="text-2xl font-bold mb-2">
+                    SpaceScript Division (Coding)
+                  </h3>
+                  <p className="text-space-light mb-4">
+                    The SpaceScript Division of ISA focuses on software development and
+                    problem-solving through real-world projects. This section is ideal for
+                    students who are interested in building and contributing to:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-space-light">
+                    <li>Developing modern web applications and tools</li>
+                    <li>Working with frontend and backend technologies</li>
+                    <li>Building and managing real-world projects collaboratively</li>
+                    <li>Improving problem-solving skills through practical implementation</li>
+                    <li>Contributing to the community through consistent development work</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -192,17 +220,17 @@ const About = () => {
         </div>
       </section>
 
-            {/* Meet Our Team - 1 */}
-            {/* <TeamsSection department={leaders} teamName={"Founders"}/> */}
+      {/* Meet Our Team - 1 */}
+      {/* <TeamsSection department={leaders} teamName={"Founders"}/> */}
 
-            {/* Meet Our Team */}
-            {/* <TeamsSection department={teamMembers} teamName={"Developers"}/> */}
+      {/* Meet Our Team */}
+      {/* <TeamsSection department={teamMembers} teamName={"Developers"}/> */}
 
-            {/* Club Department Team */}
-            {/* <TeamsSection department={clubDepartments} teamName={"Core Team"}/> */}
+      {/* Club Department Team */}
+      {/* <TeamsSection department={clubDepartments} teamName={"Core Team"}/> */}
 
-            {/* Contributors */}
-            {/* <TeamsSection department={contributors} teamName={"Contributors"}/> */}
+      {/* Contributors */}
+      {/* <TeamsSection department={contributors} teamName={"Contributors"}/> */}
 
       <section className="py-20">
         <div className="container mx-auto px-4">

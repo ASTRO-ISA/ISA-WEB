@@ -31,7 +31,7 @@
     "node-cron": "^4.2.0",
     "nodemailer": "^7.0.3",
     "nodemon": "^3.1.10",
-    "pg-sdk-node": "https://phonepe.mycloudrepo.io/public/repositories/phonepe-pg-sdk-node/releases/v2/phonepe-pg-sdk-node.tgz",
+    "pg-sdk-node": "file:./pg-sdk-node-2.0.2.tgz",
     "qrcode": "^1.5.4",
     "slugify": "^1.6.6",
     "uuid": "^8.3.2",

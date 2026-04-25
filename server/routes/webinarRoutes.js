@@ -8,6 +8,7 @@ const restrictTo = require('../middlewares/restrictTo')
 
 const uploadImage = multer({ storage: imageStorage('webinar-thumbnails') })
 
+// Triggering Deployemnt : THIS COMMENT IS USELESS, JUST WRITTEN TO TRIGGER THE DEPLOYEMNT FLOW
 // for all users
 router.route('/').get(webinarController.Webinars)
 // router.route('/:id').get(webinarController.getWebinar)

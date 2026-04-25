@@ -24,10 +24,10 @@ jobs:
       - name: Send Deployment Command via SSM
         run: |
           aws ssm send-command \
-            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Deploying backend from GitHub Actions" \
-            --parameters commands=["sudo -u ubuntu bash -c 'cd /home/ubuntu/ISA-WEB/server && git pull origin main && npm install && pm2 restart api_server'"] \
-            --timeout-seconds 60 \
-            --max-concurrency "50" \
-            --max-errors "0"
+          --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+          --document-name "AWS-RunShellScript" \
+          --comment "Deploying backend from GitHub Actions" \
+          --parameters 'commands=["sudo -u ubuntu bash -c \"cd /home/ubuntu/ISA-WEB/server && git pull origin main && npm install && pm2 restart api_server\""]' \
+          --timeout-seconds 60 \
+          --max-concurrency "50" \
+          --max-errors "0"

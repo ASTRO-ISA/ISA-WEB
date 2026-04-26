@@ -100,6 +100,11 @@ const EventsCalendar = () => {
                       src={launch.image?.image_url}
                       loading="lazy"
                       alt={launch.name}
+                      onError={() => {
+                        setLaunches((prevLaunches) => 
+                          prevLaunches.filter((l) => l.id !== launch.id)
+                        );
+                      }}
                     />
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">

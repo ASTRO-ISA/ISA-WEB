@@ -1,11 +1,4 @@
-import {
-  Calendar,
-  Clock,
-  ExternalLink,
-  MoreVertical,
-  Share,
-  Star,
-} from "lucide-react";
+import { Calendar, Clock, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -28,6 +21,8 @@ const Blog = () => {
   const navigate = useNavigate();
   const { isLoggedIn, isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const [failedExternalBlogIds, setFailedExternalBlogIds] = useState([]);
+  const [failedArticleIds, setFailedArticleIds] = useState([]);
 
   // featured blog
   const [loadingFeaturedBlog, setLoadingFeaturedBlog] = useState(false);
@@ -317,6 +312,14 @@ const Blog = () => {
       });
     }
   };
+
+  const validExternalBlogs = externalBlogs.filter(
+    (blog) => !failedExternalBlogIds.includes(blog.id)
+  );
+
+  const validArticles = articles.filter(
+    (article) => !failedArticleIds.includes(article.id)
+  );
 
   return (
     <div className="min-h-screen bg-space-dark text-white">
@@ -663,14 +666,14 @@ const Blog = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {loadingExternalBlogs ? (
               <p className="text-gray-500 italic text-center sm:text-start">Loading...</p>
-            ) : externalBlogs.length === 0 ? (
+            ) : validExternalBlogs.length === 0 ? (
               <p className="text-gray-500 italic text-center sm:text-start">
                 Nothing to see here right now!
               </p>
             ) : (
               (showAllExternalBlogs
-                ? externalBlogs
-                : externalBlogs.slice(0, 3)
+                ? validExternalBlogs
+                : validExternalBlogs.slice(0, 3)
               ).map((blog) => (
                 <Link
                   key={blog.id}
@@ -683,6 +686,9 @@ const Blog = () => {
                       src={blog.image_url}
                       alt={blog.title}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={() => {
+                        setFailedExternalBlogIds((prev) => [...prev, blog.id]);
+                      }}
                     />
                   </div>
                   <div className="p-5 flex-1 flex flex-col justify-between">
@@ -720,7 +726,7 @@ const Blog = () => {
 
           {/* View all blogs button */}
           {/* if there are no events, no need to show the see all events button */}
-          {externalBlogs.length > 3 && !showAllExternalBlogs && (
+          {validExternalBlogs.length > 3 && !showAllExternalBlogs && (
             <div className="text-center mt-10">
               <button
                 onClick={() => setShowAllExternalBlogs(true)}
@@ -730,7 +736,7 @@ const Blog = () => {
               </button>
             </div>
           )}
-          {externalBlogs.length > 3 && showAllExternalBlogs && (
+          {validExternalBlogs.length > 3 && showAllExternalBlogs && (
             <div className="text-center mt-10">
               <button
                 onClick={() => setShowAllExternalBlogs(false)}
@@ -751,12 +757,12 @@ const Blog = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {loadingArticles ? (
               <p className="text-gray-500 italic text-center sm:text-start">Loading...</p>
-            ) : articles.length === 0 ? (
+            ) : validArticles.length === 0 ? (
               <p className="text-gray-500 italic text-center sm:text-start">
                 Nothing to see here right now!
               </p>
             ) : (
-              (showAllArticles ? articles : articles.slice(0, 3)).map(
+              (showAllArticles ? validArticles : validArticles.slice(0, 3)).map(
                 (article) => (
                   <Link
                     key={article.id}
@@ -769,6 +775,9 @@ const Blog = () => {
                         src={article.image_url}
                         alt={article.title}
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={() => {
+                          setFailedArticleIds((prev) => [...prev, article.id]);
+                        }}
                       />
                     </div>
                     <div className="p-5 flex-1 flex flex-col justify-between">
@@ -805,7 +814,7 @@ const Blog = () => {
             )}
           </div>
 
-          {articles.length > 3 && !showAllArticles && (
+          {validArticles.length > 3 && !showAllArticles && (
             <div className="text-center mt-10">
               <button
                 onClick={() => setShowAllArticles(true)}
@@ -815,7 +824,7 @@ const Blog = () => {
               </button>
             </div>
           )}
-          {articles.length > 3 && showAllArticles && (
+          {validArticles.length > 3 && showAllArticles && (
             <div className="text-center mt-10">
               <button
                 onClick={() => setShowAllArticles(false)}

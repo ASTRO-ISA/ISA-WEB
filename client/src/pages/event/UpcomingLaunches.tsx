@@ -6,6 +6,10 @@ import FormatTime from "@/components/ui/FormatTime";
 
 const UpcomingLaunches = ({ launches }) => {
   const [showAll, setShowAll] = useState(false);
+  const [failedImageIds, setFailedImageIds] = useState([]);
+  const validLaunches = launches.filter(
+    (launch) => !failedImageIds.includes(launch.id || launch.name)
+  );
 
   return (
     <section className="pt-10 bg-space-dark pl-0 pr-0">
@@ -23,10 +27,10 @@ const UpcomingLaunches = ({ launches }) => {
         {/* Horizontal Scrollable Cards (for all screens) */}
         <div className="overflow-x-auto scrollbar-hide scroll-smooth">
           <div className="flex gap-6 min-w-[640px] snap-x snap-mandatory">
-            {launches.length === 0 ? (
+            {validLaunches.length === 0 ? (
               <p className="text-gray-400 text-sm">Nothing to see here right now!</p>
             ) : (
-              (showAll ? launches : launches.slice(0, 6)).map((launch) => (
+              (showAll ? validLaunches : validLaunches.slice(0, 6)).map((launch) => (
                 <Card
                   key={launch.id || launch.name}
                   className="cosmic-card border-none overflow-hidden bg-space-dark/60 flex-shrink-0 w-72 snap-start min-h-[26rem]"
@@ -38,6 +42,10 @@ const UpcomingLaunches = ({ launches }) => {
                       src={launch.image?.image_url}
                       alt={launch.name}
                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                      onError={() => {
+                        // adding this launch's ID to the failed list so it gets filtered out
+                        setFailedImageIds((prev) => [...prev, launch.id || launch.name]);
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   </div>

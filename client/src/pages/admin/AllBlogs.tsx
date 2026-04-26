@@ -122,7 +122,7 @@ const AllBlogs = () => {
           (showAllUserBlogs ? userBlogs : userBlogs.slice(0, 3)).map((blog) => (
             <div key={blog._id} className="relative group">
               <Link
-                to={`/blogs/${blog._id}`}
+                to={`/blogs/${blog.slug}`}
                 className="cosmic-card group flex flex-col cursor-pointer relative"
               >
                 {/* Thumbnail */}

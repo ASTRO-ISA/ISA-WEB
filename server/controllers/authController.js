@@ -71,6 +71,10 @@ exports.logout = async (req, res) => {
     // setting the cookie to empty
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
+    domain:
+      process.env.NODE_ENV === 'production'
+        ? process.env.COOKIE_DOMAIN // for production
+        : 'localhost', // for local dev
     expires: new Date(0)
   })
   res.status(200).json({ status: 'success', message: 'Logged out' })

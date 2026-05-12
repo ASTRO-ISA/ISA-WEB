@@ -16,6 +16,7 @@ const {
   allPapers,
   userApprovedPapers
 } = require('../controllers/researchPaperController')
+const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadDocument = multer({
   storage: documentStorage('researchPaper-attachments')
@@ -37,10 +38,10 @@ router.use(restrictTo(['admin', 'super-admin']))
 router.route('/all').get(allPapers)
 router.route('/pending').get(pendingPapers)
 router.route('/rejected').get(rejectedPapers)
-router.route('/status/:id').patch(changeStatus)
+router.route('/status/:id').patch(auditLog('CHANGE_STATUS', 'ResearchPaper'), changeStatus)
 router
   .route('/:id')
-  .patch(uploadDocument.single('file'), updatePaper)
-  .delete(deletePaper)
+  .patch(uploadDocument.single('file'), auditLog('UPDATE_PAPER', 'ResearchPaper'), updatePaper)
+  .delete(auditLog('DELETE_PAPER', 'ResearchPaper'), deletePaper)
 
 module.exports = router

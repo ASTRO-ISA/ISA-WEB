@@ -11,6 +11,7 @@ const {
   setFeaturedFromUserPic
 } = require('../controllers/userPicForPotdController')
 const rateLimit = require('express-rate-limit')
+const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadImage = multer({ storage: imageStorage('user-pics-for-potd') })
 
@@ -27,7 +28,7 @@ router
 
 router.use(restrictTo(['admin', 'super-admin']))
 router.route('/').get(getAllPics)
-router.route('/setFeatured').post(setFeaturedFromUserPic)
-router.route('/delete/:id').delete(deletePic)
+router.route('/setFeatured').post(auditLog('SET_FEATURED_USER_PIC', 'UserPOTD'), setFeaturedFromUserPic)
+router.route('/delete/:id').delete(auditLog('DELETE_USER_PIC', 'UserPOTD'), deletePic)
 
 module.exports = router

@@ -5,11 +5,14 @@ const multer = require('multer')
 const router = express.Router()
 const { imageStorage } = require('../utils/cloudinaryStorage')
 const restrictTo = require('../middlewares/restrictTo')
+const { auditLog } = require('../middlewares/auditLogger') 
 
 const uploadImage = multer({ storage: imageStorage('event-banners') })
 
 router.route('/').get(eventController.approvedEvents)
+
 router.use(authenticateToken)
+
 router
   .route('/pending')
   .get(
@@ -24,28 +27,46 @@ router
   )
 
 router.route('/:slug').get(eventController.getEvent)
+
 router
   .route('/create')
   .post(
     uploadImage.single('thumbnail'),
+    auditLog('CREATE_EVENT', 'Event'),
     eventController.createEvent
   )
 
 router
   .route('/my-events/:userid')
   .get(eventController.registeredEvents)
+
 router
   .route('/status/:id')
-  .patch(restrictTo(['admin', 'super-admin']), eventController.changeStatus)
-router.route('/register/:eventid/:userid').patch(eventController.registerEvent)
-router
-  .route('/unregister/:eventid/:userid')
-  .patch(eventController.unregisterEvent)
+  .patch(
+    restrictTo(['admin', 'super-admin']), 
+    auditLog('UPDATE_EVENT', 'Event'),
+    eventController.changeStatus
+  )
 
-router.delete('/:id', eventController.deleteEvent)
-router.patch('/:id/toggle-registration', eventController.toggleRegistration)
+router.route('/register/:eventid/:userid').patch(eventController.registerEvent)
+router.route('/unregister/:eventid/:userid').patch(eventController.unregisterEvent)
+
+router.delete('/:id', 
+  auditLog('DELETE_EVENT', 'Event'),
+  eventController.deleteEvent
+)
+
+router.patch('/:id/toggle-registration', 
+  auditLog('TOGGLE_REGISTRATION_EVENT', 'Event'),
+  eventController.toggleRegistration
+)
+
 router
   .route('/:id')
-  .put(restrictTo(['admin', 'super-admin']), eventController.updateEvent)
+  .put(
+    restrictTo(['admin', 'super-admin']), 
+    auditLog('UPDATE_EVENT', 'Event'),
+    eventController.updateEvent
+  )
 
 module.exports = router

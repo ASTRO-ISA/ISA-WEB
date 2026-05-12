@@ -5,6 +5,7 @@ const multer = require('multer')
 const router = express.Router()
 const { imageStorage } = require('../utils/cloudinaryStorage')
 const restrictTo = require('../middlewares/restrictTo')
+const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadImage = multer({ storage: imageStorage('webinar-thumbnails') })
 
@@ -31,8 +32,8 @@ router
 router.use(restrictTo(['admin', 'super-admin']))
 router
   .route('/create')
-  .post(uploadImage.single('thumbnail'), webinarController.createWebinar)
-router.route('/:id').put(webinarController.updatedWebinar)
-router.route('/:id').delete(webinarController.deleteWebinar)
+  .post(uploadImage.single('thumbnail'), auditLog('CREATE_WEBINAR', 'Webinar'), webinarController.createWebinar)
+router.route('/:id').put(auditLog('UPDATE_WEBINAR', 'Webinar'), webinarController.updatedWebinar)
+router.route('/:id').delete(auditLog('DELETE_WEBINAR', 'Webinar'), webinarController.deleteWebinar)
 
 module.exports = router

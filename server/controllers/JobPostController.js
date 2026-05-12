@@ -33,6 +33,9 @@ exports.createJob = async (req, res) => {
       documentPublicId: req.file.filename,
       description: req.body.description
     })
+
+    res.locals.documentId = newJob._id
+
     res.status(201).json({ status: 'success', data: newJob })
   } catch (error) {
     res.status(500).json({

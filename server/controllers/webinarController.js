@@ -60,6 +60,8 @@ exports.createWebinar = async (req, res) => {
     const webinar = new Webinar(webinarData)
     await webinar.save()
 
+    res.locals.documentId = webinar._id
+
     res.status(201).json({ message: "Webinar created successfully", webinar })
   } catch (error) {
     console.error("Failed to create webinar", error)

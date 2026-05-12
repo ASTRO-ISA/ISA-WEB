@@ -219,6 +219,9 @@ exports.approveRefund = async (req, res) => {
       refund.status = 'rejected'
       refund.approvedBy = adminId
       await tx.save()
+
+      res.locals.documentId = tx._id
+
       return res.json({ message: 'Refund rejected' })
     }
 
@@ -234,6 +237,8 @@ exports.approveRefund = async (req, res) => {
     refund.rawGatewayResponse = response
     refund.approvedBy = adminId
     await tx.save()
+
+    res.locals.documentId = tx._id
 
     res.json({ message: 'Refund processed', refundId, data: response })
   } catch (err) {

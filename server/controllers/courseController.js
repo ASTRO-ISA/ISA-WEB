@@ -23,6 +23,8 @@ const createCourse = async (req, res) => {
 
     const savedCourse = await newCourse.save()
 
+    res.locals.documentId = savedCourse._id
+
     res.status(201).json({
       message: 'Course created successfully',
       course: savedCourse

@@ -6,6 +6,7 @@ const { imageStorage } = require('../utils/cloudinaryStorage')
 const rateLimit = require('express-rate-limit')
 const router = express.Router()
 const restrictTo = require('../middlewares/restrictTo')
+const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadImage = multer({ storage: imageStorage('blog-thumbnails') })
 
@@ -40,7 +41,7 @@ router.route('/like/:id').post(blogController.likeBlog)
 router.route('/unlike/:id').delete(blogController.unlikeBlog)
 
 router.use(restrictTo(['admin', 'super-admin']))
-router.route('/status/:id').patch(blogController.changeStatus)
+router.route('/status/:id').patch(auditLog('BLOG_STATUS', 'Blog'), blogController.changeStatus)
 
 module.exports = router
 

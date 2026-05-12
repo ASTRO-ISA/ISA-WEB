@@ -49,7 +49,7 @@ const ResetPassword = () => {
       console.error("Reset error:", err);
       toast({
         title: "Reset Failed",
-        description: "The reset link may be invalid or expired",
+        description: err.response.data.message,
         variant: "destructive",
       });
     }

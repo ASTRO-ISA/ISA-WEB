@@ -113,6 +113,9 @@ exports.forgotPassword = async (req, res) => {
   const user = await User.findOne({ email })
   if (!user)
     return res.status(404).json({ message: 'User not found with this email' })
+  if(user.role === 'admin'){
+    return res.status(403).json({ status: 'fail', message: 'Administrators are not permitted to reset passwords via this route.'})
+  }
 
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
     expiresIn: '15m'
@@ -149,6 +152,9 @@ exports.resetPassword = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     const user = await User.findById(decoded.id).select('+password')
     if (!user) return res.status(400).json({ message: 'Invalid user' })
+    if(user.role === 'admin'){
+      return res.status(403).json({ status: 'fail', message: 'Administrators are not permitted to reset passwords via this route.'})
+    }
 
     user.password = newPassword
     user.passwordChangedAt = Date.now()

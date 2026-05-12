@@ -3,6 +3,7 @@ const router = express.Router()
 const authenticateToken = require('../middlewares/authenticateToken')
 const newsletterController = require('../controllers/newsletterController')
 const restrictTo = require('../middlewares/restrictTo')
+const { auditLog } = require('../middlewares/auditLogger')
 
 router.use(authenticateToken)
 router.route('/subscribe').post(newsletterController.subscribeToNewsletter)
@@ -17,6 +18,6 @@ router.route('/draft/add').post(newsletterController.addToNewsletterDraft)
 router
   .route('/draft/remove')
   .post(newsletterController.removeFromNewsletterDraft)
-router.route('/draft/send').post(newsletterController.sendNewsletter)
+router.route('/draft/send').post(auditLog('SEND_NEWSLETTER', 'Newsletter'), newsletterController.sendNewsletter)
 
 module.exports = router

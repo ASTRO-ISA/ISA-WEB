@@ -10,6 +10,7 @@ const {
 const authenticateToken = require('../middlewares/authenticateToken')
 const rateLimit = require('express-rate-limit')
 const restrictTo = require('../middlewares/restrictTo')
+const { auditLog } = require('../middlewares/auditLogger')
 
 const paymentLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -31,7 +32,7 @@ router.route('/status/:itemType/:transactionId').get(verifyPayment)
 router.route('/request-refund/:transactionId').post(refundRequestLimiter, requestRefund)
 
 router.use(restrictTo(['admin', 'super-admin']))
-router.route('/approve-refund/:transactionId/:refundId').post(approveRefund)
-router.route('/transactions').get(getTransactions)
+router.route('/approve-refund/:transactionId/:refundId').post(auditLog('APPROVE_REFUND', 'Payment'), approveRefund)
+router.route('/transactions').get(auditLog('GET_TXN', 'Payment'), getTransactions)
 
 module.exports = router

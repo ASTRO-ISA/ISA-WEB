@@ -9,6 +9,7 @@ const {
   createCourse,
   deleteCourse
 } = require('../controllers/courseController')
+const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadCourseImage = multer({ storage: imageStorage('courses') })
 
@@ -16,7 +17,7 @@ router.get('/', getAllCourses)
 
 router.use(authenticateToken)
 router.use(restrictTo(['admin', 'super-admin']))
-router.post('/create', uploadCourseImage.single('image'), createCourse)
-router.delete('/:id', deleteCourse)
+router.post('/create', uploadCourseImage.single('image'), auditLog('CREATE_COURSE', 'Course'), createCourse)
+router.delete('/:id', auditLog('DELETE_COURSE', 'Course'), deleteCourse)
 
 module.exports = router

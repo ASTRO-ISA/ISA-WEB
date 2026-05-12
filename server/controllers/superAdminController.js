@@ -67,16 +67,24 @@ exports.deleteAdmin = async (req, res) => {
 exports.updateAdmin = async (req, res) => {
   try {
     const adminId = req.params.id
-    const updatedAdmin = await User.findByIdAndUpdate(adminId, req.body, {
-      new: true,
-      runValidators: true
-    })
 
-    if (!updatedAdmin) {
-      return res
-        .status(404)
-        .json({ status: 'fail', message: 'Admin not found' })
+    const admin = await User.findById(adminId)
+
+    if (!admin) {
+      return res.status(404).json({ status: 'fail', message: 'Admin not found' })
     }
+
+    if (req.body.name) admin.name = req.body.name
+    if (req.body.email) admin.email = req.body.email
+    if (req.body.phoneNo) admin.phoneNo = req.body.phoneNo
+
+    if (req.body.newPassword) {
+      admin.password = req.body.newPassword
+    }
+
+    const updatedAdmin = await admin.save({ runValidators: true })
+
+    updatedAdmin.password = undefined
 
     res.status(200).json({
       status: 'success',

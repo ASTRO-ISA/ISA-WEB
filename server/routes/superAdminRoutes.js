@@ -8,10 +8,11 @@ const {
 } = require('../controllers/superAdminController')
 const authenticateToken = require('../middlewares/authenticateToken')
 const router = express.Router()
+const { auditLog } = require('../middlewares/auditLogger')
 
 router.use(authenticateToken)
 router.use(restrictTo(['super-admin']))
-router.route('/admins').post(createAdmin).get(getAllAdmins)
-router.route('/admin/:id').delete(deleteAdmin).patch(updateAdmin)
+router.route('/admins').post(auditLog('CREATE_ADMIN', 'Super'), createAdmin).get(getAllAdmins)
+router.route('/admin/:id').delete(auditLog('DELETE_ADMIN', 'Super'), deleteAdmin).patch(auditLog('UPDATE_ADMIN', 'Super'),updateAdmin)
 
 module.exports = router

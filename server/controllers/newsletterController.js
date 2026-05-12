@@ -207,6 +207,8 @@ exports.sendNewsletter = async (req, res) => {
 
     await NewsletterDraft.deleteMany()
 
+    res.locals.documentId = draft._id
+
     return res.status(200).json({ msg: 'Newsletter sent successfully' })
 
   } catch (err) {

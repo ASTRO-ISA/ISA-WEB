@@ -95,6 +95,8 @@ exports.addScanner = async (req, res) => {
   
       event.scanners.push(user._id)
       await event.save()
+
+      res.locals.documentId = event._id
   
       res.status(200).json({
         success: true,

@@ -5,6 +5,7 @@ const galleryController = require('../controllers/galleryController')
 const restrictTo = require('../middlewares/restrictTo')
 const authenticateToken = require('../middlewares/authenticateToken')
 const { imageStorage } = require('../utils/cloudinaryStorage')
+const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadPic = multer({ storage: imageStorage('gallery-pics') })
 const uploadFeatured = multer({
@@ -16,13 +17,14 @@ router.get('/featured', galleryController.getFeatured)
 
 router.use(authenticateToken)
 router.use(restrictTo(['admin', 'super-admin']))
-router.post('/', uploadPic.single('image'), galleryController.uploadPics)
+router.post('/', uploadPic.single('image'), auditLog('UPLOAD_PIC', 'Gallery'), galleryController.uploadPics)
 router.post(
   '/featured',
   uploadFeatured.single('image'),
+  auditLog('UPLOAD_FEATURED_PIC', 'Gallery'),
   galleryController.uploadFeatured
 )
-router.delete('/featured/:id', galleryController.deleteFeatured)
-router.delete('/:id', galleryController.deletePics)
+router.delete('/featured/:id', auditLog('DELETE_FEATURED_PIC', 'Gallery'), galleryController.deleteFeatured)
+router.delete('/:id', auditLog('DELETE_PIC', 'Gallery'), galleryController.deletePics)
 
 module.exports = router

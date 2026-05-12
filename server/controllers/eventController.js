@@ -86,6 +86,8 @@ exports.createEvent = async (req, res) => {
     const event = new Event(eventData)
     await event.save()
 
+    res.locals.documentId = event._id
+
     res.status(201).json({ message: 'Event created successfully', event })
   } catch (error) {
     console.error('Event creation error:', error)

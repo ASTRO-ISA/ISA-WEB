@@ -12,6 +12,8 @@ exports.createAdmin = async (req, res) => {
       confirmPassword: req.body.confirmPassword
     })
 
+    res.locals.documentId = newAdmin._id
+
     res.status(201).json({
       status: 'success',
       message: 'Admin created successfully',

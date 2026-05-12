@@ -12,6 +12,9 @@ exports.uploadFeatured = async (req, res) => {
       author: req.user.id
     })
     await newFeatured.save()
+
+    res.locals.documentId = newFeatured._id
+
     res
       .status(201)
       .json({ message: 'Image uploaded successfully', pic: newFeatured })
@@ -73,6 +76,7 @@ exports.uploadPics = async (req, res) => {
       publicId: req.file.filename
     })
     await newPic.save()
+    res.locals.documentId = newPic._id
     res
       .status(201)
       .json({ message: 'Image uploaded successfully', pic: newPic })

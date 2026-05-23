@@ -3,6 +3,7 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import Spinner from "@/components/ui/Spinner";
 import SpinnerOverlay from "@/components/ui/SpinnerOverlay";
+import FormatDate from "@/components/ui/FormatDate";
 
 const fetchJobs = async () => {
   const res = await api.get("/jobs/");
@@ -76,6 +77,7 @@ const UserJobs = () => {
                   </a>
                 )}
               </div>
+              <p className="pt-2"><small className="text-gray-400">Posted on: <FormatDate date={job.createdAt} /></small></p>
             </li>
           ))}
         </ul>

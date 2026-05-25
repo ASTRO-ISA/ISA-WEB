@@ -252,7 +252,7 @@
 
 // export default EventDetails;
 
-import { Calendar, MapPin, Clock, Users, Video } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, Video, Download } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
@@ -380,6 +380,39 @@ const EventDetails = () => {
     }
   };
 
+const downloadRegisteredUsers = async () => {
+    try {
+      const res = await api.get(`/events/${slug}/download-attendees`, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      link.setAttribute('download', `${event.slug}-registered-users.csv`);
+      document.body.appendChild(link);
+      link.click();
+      
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({ description: "Download started successfully" });
+    } catch (err: any) {
+      if (err.response?.status === 400) {
+        toast({
+          description: "No registered users are available to download.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          description: "Failed to download users. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -477,6 +510,14 @@ const EventDetails = () => {
                   {event.isRegistrationOpen
                     ? "Disable Registration"
                     : "Enable Registration"}
+                </button>
+
+                <button
+                  onClick={downloadRegisteredUsers}
+                  className="bg-space-purple text-white px-3 py-1 rounded flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Registered Users
                 </button>
 
                 <button

@@ -178,6 +178,47 @@ exports.getEvent = async (req, res) => {
   }
 }
 
+exports.downloadEventAttendees = async (req, res) => {
+  const { slug } = req.params
+  try {
+    const event = await Event.findOne({ slug })
+      .select('title slug registeredUsers') 
+      .populate({
+        path: 'registeredUsers.user',
+        select: 'name phoneNo email'
+      })
+
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' })
+    }
+
+    const attendees = event.registeredUsers || []
+
+    if (!attendees.length) {
+      return res.status(400).json({ message: 'No registered users found for this event.' })
+    }
+
+    const rows = attendees.map((entry, index) => {
+      const user = entry.user || entry
+      const name = user.name ? user.name.replace(/"/g, '""') : ""
+      const phoneNo = user.phoneNo ? String(user.phoneNo).replace(/"/g, '""') : ""
+
+      return `"${index + 1}","${name}","${phoneNo}"`
+    })
+
+    const csvData = ["Serial Number,Name,Mobile Number", ...rows].join("\n")
+
+    const fileName = `${event.slug}-registered-users.csv`
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+
+    return res.status(200).send(csvData)
+
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error generating CSV' })
+  }
+}
+
 exports.registerEvent = async (req, res) => {
   try {
     const { eventid, userid } = req.params
@@ -269,7 +310,7 @@ exports.registerEvent = async (req, res) => {
         <p style="text-align:center;">
           <img src="${uploaded.secure_url}" alt="QR Code" style="max-width:200px;"/>
         </p>
-        <p>– ISA</p>
+        <p>– ISA-India</p>
       </div>
     `
 
@@ -347,7 +388,7 @@ exports.unregisterEvent = async (req, res) => {
       event.eventDate
     ).toDateString()} at ${event.location}.
     Hope to see you at our future events!
-    – ISA`
+    – ISA-India`
 
     await sendEmail(user.email, `Unregistered from ${event.title}`, text)
 

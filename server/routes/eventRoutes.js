@@ -27,6 +27,7 @@ router
   )
 
 router.route('/:slug').get(eventController.getEvent)
+router.route('/:slug/download-attendees').get(eventController.downloadEventAttendees)
 
 router
   .route('/create')

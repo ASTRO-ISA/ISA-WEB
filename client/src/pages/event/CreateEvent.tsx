@@ -16,7 +16,7 @@ const CreateEvent = () => {
     hostedBy: [{ name: "" }],
     presentedBy: "",
     type: "",
-    status: "",
+    // status: "",
     isFree: true,
     fee: "",
   });
@@ -114,7 +114,7 @@ const CreateEvent = () => {
         hostedBy: [{ name: "" }],
         presentedBy: "",
         type: "",
-        status: "",
+        // status: "",
         isFree: true,   
         fee: "",      
       });
@@ -302,7 +302,7 @@ const CreateEvent = () => {
               </select>
             </div>
 
-            <div>
+            {/* <div>
               <label htmlFor="status" className="block text-sm text-gray-400">
                 Event Status:
               </label>
@@ -318,7 +318,7 @@ const CreateEvent = () => {
                 <option value="upcoming">Upcoming</option>
                 <option value="completed">Completed</option>
               </select>
-            </div>
+            </div> */}
 
             <div>
   <label htmlFor="isFree" className="block text-sm text-gray-400">

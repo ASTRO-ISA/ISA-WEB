@@ -391,3 +391,14 @@ html, body {
   border-top: 1px solid #374151;
   margin: 2rem 0;
 }
+
+/* ─── Scanner Mode: Hide Navbar & Footer ─── */
+body.scanner-mode nav,
+body.scanner-mode footer,
+body.scanner-mode header {
+  display: none !important;
+}
+
+body.scanner-mode {
+  overflow: hidden;
+}

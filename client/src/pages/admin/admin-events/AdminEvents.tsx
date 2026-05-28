@@ -10,12 +10,6 @@ import Spinner from "@/components/ui/Spinner";
 import { Helmet } from "react-helmet-async";
 
 // Types
-interface RegisteredUser {
-  _id?: string;
-  name?: string;
-  email?: string;
-  avatar?: string;
-}
 
 interface Event {
   _id: string;
@@ -24,7 +18,7 @@ interface Event {
   eventDate: string;
   seatCapacity: number;
   isRegistrationOpen?: boolean;
-  registeredUsers?: RegisteredUser[];
+  attendeeCount?: number;
   slug: string;
 }
 
@@ -99,7 +93,7 @@ export default function AdminEvents() {
         ) : (
           <ul className="space-y-4">
             {events.map((event) => {
-              const seatsTaken = event.registeredUsers?.length ?? 0;
+              const seatsTaken = event.attendeeCount ?? 0;
               const seatsLeft = (event.seatCapacity ?? 0) - seatsTaken;
               const soldOut = seatsLeft <= 0;
 

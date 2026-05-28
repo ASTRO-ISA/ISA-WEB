@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import Spinner from "@/components/ui/Spinner";
 import { Helmet } from "react-helmet-async";
 
-const Login = () => {
+const Login = ({ redirectTo }: { redirectTo?: string }) => {
   const { refetchUser } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ const Login = () => {
       });
 
       await refetchUser();
-      navigate("/");
+      navigate(redirectTo || "/");
     } catch (err) {
       setLoggingIn(false);
       // console.error("Login error:", err);

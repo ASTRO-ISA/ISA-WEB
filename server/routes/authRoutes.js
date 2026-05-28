@@ -66,6 +66,8 @@ router.route('/verify-otp').post(verifyOtpLimiter, authController.verifyOtp)
 
 router.route('/resend-otp').post(resendOtpLimiter, authController.resendOtp)
 
+router.route('/scanner-login').post(authController.scannerLogin)
+
 router.use(authenticateToken)
 router
   .route('/updatePassword')

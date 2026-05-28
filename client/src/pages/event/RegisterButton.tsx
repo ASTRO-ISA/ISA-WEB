@@ -9,9 +9,11 @@ const RegisterButton = ({
   handlePaidRegister,
   toast,
 }) => {
-  const alreadyRegistered = event.registeredUsers.some(
-    (e) => e.user === userInfo?.user?._id
-  );
+  const normalizeUserId = (id) => (id ? String(id) : null)
+  const alreadyRegistered = event.registeredUsers?.some((e) => {
+    const registeredUserId = normalizeUserId(e?.user?._id || e?.user)
+    return registeredUserId === normalizeUserId(userInfo?.user?._id)
+  })
 
   // Check if registration is closed
   if (!event.isRegistrationOpen) {
@@ -35,7 +37,7 @@ const RegisterButton = ({
     } else {
       if (
         event.seatCapacity &&
-        event.registeredUsers.length >= event.seatCapacity
+        (event.attendeeCount ?? 0) >= event.seatCapacity
       ) {
         toast({
           title: "Sold Out",
@@ -55,7 +57,7 @@ const RegisterButton = ({
     ? event.isFree
       ? "bg-space-purple/30 hover:bg-space-purple/50"
       : "bg-gray-500 cursor-not-allowed"
-    : event.seatCapacity && event.registeredUsers.length >= event.seatCapacity
+    : event.seatCapacity && (event.attendeeCount ?? 0) >= event.seatCapacity
     ? "bg-gray-600 cursor-not-allowed"
     : "bg-space-accent hover:bg-space-accent/80";
 
@@ -63,7 +65,7 @@ const RegisterButton = ({
   const buttonDisabled =
     (!event.isFree && alreadyRegistered) ||
     (event.seatCapacity &&
-      event.registeredUsers.length >= event.seatCapacity &&
+      (event.attendeeCount ?? 0) >= event.seatCapacity &&
       !alreadyRegistered);
 
   // Button label logic
@@ -73,7 +75,7 @@ const RegisterButton = ({
       return event.isFree ? "Unregister" : "Registered";
     if (
       event.seatCapacity &&
-      event.registeredUsers.length >= event.seatCapacity
+      (event.attendeeCount ?? 0) >= event.seatCapacity
     )
       return "Sold Out";
     return event.isFree

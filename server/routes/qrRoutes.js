@@ -1,7 +1,7 @@
 const express = require('express')
+const router = express.Router()
 const { verifyQR, addScanner } = require('../controllers/qrController')
 const authenticateToken = require('../middlewares/authenticateToken')
-const router = express.Router()
 const { auditLog } = require('../middlewares/auditLogger')
 
 router.use(authenticateToken)

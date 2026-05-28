@@ -1,30 +1,36 @@
 const Event = require('../models/eventModel')
+const EventRegistration = require('../models/eventRegistrationModel')
+const User = require('../models/userModel')
+const jwt = require('jsonwebtoken')
+const { sendEmail } = require('../utils/sendEmail')
+const scannerInviteTemplate = require('../utils/emailTemplates/scannerInviteTemplate')
+require('dotenv').config()
+
 exports.verifyQR = async (req, res) => {
     try {
       const { token } = req.params
       const scannerId = req.user._id
   
-      // Find event containing this token
-      const event = await Event.findOne({ 'registeredUsers.token': token })
-        .populate('registeredUsers.user', 'name email')
-        .populate('scanners', 'email name')
-  
-      // If no event contains this token
-      if (!event) {
-        return res.status(400).json({ success: false, message: '❌ QR does not exist' })
-      }
-  
-      // Find the registered user object
-      const regUser = event.registeredUsers.find(r => r.token === token)
+      // Find registration by token
+      const regUser = await EventRegistration.findOne({ token })
+        .populate('user', 'name email')
+
       if (!regUser) {
-        return res.status(400).json({ success: false, message: '❌ QR does not exist' })
+        return res.status(400).json({ success: false, message: 'QR does not exist' })
+      }
+
+      // Find the event for this registration
+      const event = await Event.findById(regUser.event)
+        .populate('scanners', 'email name')
+
+      if (!event) {
+        return res.status(400).json({ success: false, message: 'QR does not exist' })
       }
   
       // Check authorization
       const isCreator = event.createdBy.toString() === scannerId.toString()
       const isAdmin = req.user.role === 'admin'
-    //   const isScanner = event.scanners.some(s => s.toString() === scannerId.toString())
-    const isScanner = event.scanners.some(s => s._id.toString() === scannerId.toString())
+      const isScanner = event.scanners.some(s => s._id.toString() === scannerId.toString())
   
       if (!isCreator && !isAdmin && !isScanner) {
         return res.status(403).json({ success: false, message: 'You are not authorized to scan this event' })
@@ -47,7 +53,7 @@ exports.verifyQR = async (req, res) => {
   
       // Mark as used
       regUser.used = true
-      await event.save()
+      await regUser.save()
   
       // Respond with user details
       res.status(200).json({
@@ -97,6 +103,31 @@ exports.addScanner = async (req, res) => {
       await event.save()
 
       res.locals.documentId = event._id
+
+      // Generate auto-login scanner token (7 day expiry)
+      const scannerToken = jwt.sign(
+        { id: user._id, purpose: 'scanner-login' },
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' }
+      )
+
+      // Build scanner link with auto-login token
+      const scannerLink = `${process.env.ORIGIN_FRONTEND}/events/scanner/${event.slug}?scannerToken=${scannerToken}`
+
+      // Send invitation email using template
+      const emailContent = scannerInviteTemplate({
+        scannerName: user.name,
+        eventTitle: event.title,
+        eventDate: new Date(event.eventDate).toDateString(),
+        eventLocation: event.location,
+        scannerLink
+      })
+
+      await sendEmail(
+        user.email,
+        `You've been added as a scanner for "${event.title}"`,
+        emailContent
+      )
   
       res.status(200).json({
         success: true,

@@ -1,5 +1,7 @@
 const { default: slugify } = require('slugify')
+const mongoose = require('mongoose')
 const Event = require('../models/eventModel')
+const EventRegistration = require('../models/eventRegistrationModel')
 const User = require('../models/userModel')
 const { sendEmail, sendEmailWithAttachment } = require('../utils/sendEmail')
 const cloudinary = require('cloudinary').v2
@@ -7,8 +9,10 @@ require('dotenv').config()
 const { v4: uuidv4 } = require('uuid')
 const QRCode = require('qrcode')
 const PaymentTransaction = require('../models/transactionsModel')
+const registrationConfirmTemplate = require('../utils/emailTemplates/registrationConfirmTemplate')
 
 exports.createEvent = async (req, res) => {
+  console.log(req.body)
   try {
     let {
       title,
@@ -18,7 +22,7 @@ exports.createEvent = async (req, res) => {
       eventType,
       presentedBy,
       type,
-      status,
+      // status,
       isFree,
       fee,
       seatCapacity
@@ -56,10 +60,7 @@ exports.createEvent = async (req, res) => {
     const createdBy = req.user.id
 
     // slug for clean URLs
-    const slug = slugify(title, {
-      lower: true,
-      strict: true
-    })
+    const slug = slugify(title, { lower: true, strict: true })
 
     // prepare event data
     const eventData = {
@@ -72,7 +73,7 @@ exports.createEvent = async (req, res) => {
       eventType,
       presentedBy,
       type,
-      status,
+      // status,
       hostedBy,
       thumbnail,
       publicId,
@@ -90,17 +91,14 @@ exports.createEvent = async (req, res) => {
 
     res.status(201).json({ message: 'Event created successfully', event })
   } catch (error) {
-    console.error('Event creation error:', error)
+    console.log(error.message)
     res.status(500).json({ error: 'Failed to create event' })
   }
 }
 
 exports.Events = async (req, res) => {
   try {
-    const events = await Event.find({}).populate(
-      'registeredUsers',
-      'avatar name email'
-    )
+    const events = await Event.find({})
     if (!events) {
       return res.status(404).json({ message: 'Event not found' })
     }
@@ -112,10 +110,7 @@ exports.Events = async (req, res) => {
 
 exports.pendingEvents = async (req, res) => {
   try {
-    const events = await Event.find({ statusAR: 'pending' }).populate(
-      'registeredUsers',
-      'avatar name email'
-    )
+    const events = await Event.find({ statusAR: 'pending' })
     if (!events) {
       return res.status(404).json({ message: 'Event not found' })
     }
@@ -129,7 +124,6 @@ exports.approvedEvents = async (req, res) => {
   try {
     const events = await Event.find({ statusAR: 'approved' })
       .sort({ createdAt: -1 })
-      .populate('registeredUsers', 'avatar name email')
     if (!events) {
       return res.status(404).json({ message: 'Event not found' })
     }
@@ -146,7 +140,6 @@ exports.upcomingEvents = async (req, res) => {
       status: 'upcoming'
     })
       .sort({ createdAt: -1 })
-      .populate('registeredUsers', 'avatar name email')
     if (!events) {
       return res.status(404).json({ message: 'Event not found' })
     }
@@ -159,20 +152,24 @@ exports.upcomingEvents = async (req, res) => {
 exports.getEvent = async (req, res) => {
   const { slug } = req.params
   try {
-    const event = await Event.findOne({ slug }).populate([
-      {
-        path: 'createdBy',
-        select: '_id name email'
-      },
-      {
-        path: 'registeredUsers',
-        select: '_id name email'
-      }
-    ])
+    const event = await Event.findOne({ slug }).populate({
+      path: 'createdBy',
+      select: '_id name email'
+    })
     if (!event) {
       return res.status(404).json({ message: 'Event not found' })
     }
-    res.status(200).json(event)
+
+    // explicitly query registrations from the separate collection
+    const registeredUsers = await EventRegistration.find({ event: event._id })
+      .populate('user', '_id name email')
+      .lean()
+
+    // attach registrations to the event response
+    const eventObj = event.toObject()
+    eventObj.registeredUsers = registeredUsers
+
+    res.status(200).json(eventObj)
   } catch (err) {
     res.status(500).json({ message: 'Server error in getEvent' })
   }
@@ -181,18 +178,19 @@ exports.getEvent = async (req, res) => {
 exports.downloadEventAttendees = async (req, res) => {
   const { slug } = req.params
   try {
-    const event = await Event.findOne({ slug })
-      .select('title slug registeredUsers') 
-      .populate({
-        path: 'registeredUsers.user',
-        select: 'name phoneNo email'
-      })
+    const event = await Event.findOne({ slug }).select('title slug')
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' })
     }
 
-    const attendees = event.registeredUsers || []
+    // query registrations from the separate collection
+    const attendees = await EventRegistration.find({ event: event._id })
+      .populate({
+        path: 'user',
+        select: 'name phoneNo email'
+      })
+      .lean()
 
     if (!attendees.length) {
       return res.status(400).json({ message: 'No registered users found for this event.' })
@@ -220,6 +218,8 @@ exports.downloadEventAttendees = async (req, res) => {
 }
 
 exports.registerEvent = async (req, res) => {
+  const session = await mongoose.startSession()
+
   try {
     const { eventid, userid } = req.params
     const tokenUserId = req.user.id
@@ -229,18 +229,18 @@ exports.registerEvent = async (req, res) => {
       return res.status(403).json({ message: "Can't validate user" })
     }
 
-    const event = await Event.findById(eventid)
     const user = await User.findById(userid)
-
     if (!user) return res.status(400).json({ message: 'Please login first' })
+
+    const event = await Event.findById(eventid)
     if (!event) return res.status(400).json({ message: 'Event not found' })
 
-    // check if registration are open
+    // check if registrations are open
     if (!event.isRegistrationOpen) {
       return res.status(400).json({ message: 'Registration for this event is currently closed.' })
     }
 
-    // for paid events — verify payment
+    // for paid events — verify payment (outside transaction, read-only)
     if (!event.isFree) {
       const payment = await PaymentTransaction.findOne({
         user_id: userid,
@@ -256,35 +256,55 @@ exports.registerEvent = async (req, res) => {
       }
     }
 
-    // generate unique token
-    let registrationToken
-    do {
-      registrationToken = uuidv4()
-    } while (event.registeredUsers?.some((r) => r.token === registrationToken))
+    // generate unique token before transaction
+    const registrationToken = uuidv4()
 
-    // prevent duplicates + overbooking
+    // begin txn
+    session.startTransaction()
+
+    // Atomically validate capacity AND increment attendeeCount
+    // This uses $expr to compare two fields within the same document
     const updatedEvent = await Event.findOneAndUpdate(
       {
         _id: eventid,
-        'registeredUsers.user': { $ne: userid }, // not already registered
-        $or: [
-          { seatCapacity: { $exists: false } },
-          { $expr: { $lt: [{ $size: '$registeredUsers' }, '$seatCapacity'] } }
-        ]
+        $expr: { $lt: ['$attendeeCount', '$seatCapacity'] }
       },
-      {
-        $push: {
-          registeredUsers: { user: userid, token: registrationToken, used: false }
-        }
-      },
-      { new: true }
-    ).populate('registeredUsers.user', 'name email')
+      { $inc: { attendeeCount: 1 } },
+      { new: true, session }
+    )
 
     if (!updatedEvent) {
-      return res.status(400).json({ message: 'Already registered or seats full.' })
+      await session.abortTransaction()
+      return res.status(400).json({ message: 'Seats are full. Registration closed.' })
     }
 
-    // generate QR code
+    // Create registration ticket within the same transaction
+    let registration
+    try {
+      const [created] = await EventRegistration.create(
+        [{
+          event: eventid,
+          user: userid,
+          token: registrationToken,
+          used: false
+        }],
+        { session }
+      )
+      registration = created
+    } catch (err) {
+      await session.abortTransaction()
+      // duplicate key error = already registered
+      if (err.code === 11000) {
+        return res.status(400).json({ message: 'You are already registered for this event.' })
+      }
+      throw err
+    }
+
+    // Both operations succeeded — commit
+    await session.commitTransaction()
+    // end txn
+
+    // generate QR code (outside transaction — non-critical)
     const qrDataUrl = await QRCode.toDataURL(registrationToken)
     const qrBuffer = await QRCode.toBuffer(registrationToken)
 
@@ -293,28 +313,16 @@ exports.registerEvent = async (req, res) => {
       folder: 'event_qrcodes'
     })
 
-    // email content
-    const emailContent = `
-      <div style="font-family: Arial, sans-serif; line-height:1.5;">
-        <h3>Event Registration Confirmed</h3>
-        <p>Hi ${user.name},</p>
-        <p>
-          You have successfully registered for 
-          <b>"${event.title}"</b> on 
-          <b>${new Date(event.eventDate).toDateString()}</b> 
-          at <b>${event.location}</b>.
-        </p>
-        <p style="background:#f9f9f9; padding:12px; border-left:4px solid #4F46E5; margin:20px 0;">
-          <strong>Important:</strong> Please save the attached QR code for entry at the venue.
-        </p>
-        <p style="text-align:center;">
-          <img src="${uploaded.secure_url}" alt="QR Code" style="max-width:200px;"/>
-        </p>
-        <p>– ISA-India</p>
-      </div>
-    `
+    // email content using template
+    const emailContent = registrationConfirmTemplate({
+      userName: user.name,
+      eventTitle: event.title,
+      eventDate: new Date(event.eventDate).toDateString(),
+      eventLocation: event.location,
+      qrImageUrl: uploaded.secure_url
+    })
 
-    // send email with QR
+    // send email with QR attachment
     await sendEmailWithAttachment(
       user.email,
       `Registered for ${event.title}`,
@@ -328,16 +336,117 @@ exports.registerEvent = async (req, res) => {
       ]
     )
 
+    // fetch updated event with registrations for response
+    const freshEvent = await Event.findById(eventid)
+    const registeredUsers = await EventRegistration.find({ event: eventid })
+      .populate('user', 'name email')
+      .lean()
+    const eventObj = freshEvent.toObject()
+    eventObj.registeredUsers = registeredUsers
+
     return res.status(200).json({
       success: true,
       message: `User successfully registered for the ${event.isFree ? 'free' : 'paid'} event`,
-      data: updatedEvent
+      data: eventObj
     })
   } catch (error) {
+    // safety net — abort if still in progress
+    if (session.inTransaction()) {
+      await session.abortTransaction()
+    }
     console.error('Error in event registration:', error)
     res.status(500).json({
       success: false,
       message: 'User registration failed for the event'
+    })
+  } finally {
+    session.endSession()
+  }
+}
+
+exports.scanTicket = async (req, res) => {
+  try {
+    const { token } = req.body
+
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Token is required' })
+    }
+
+    // find registration by token and populate user + event
+    const registration = await EventRegistration.findOne({ token })
+      .populate('user', 'name email')
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        status: 'invalid',
+        message: 'Invalid Ticket'
+      })
+    }
+
+    const event = await Event.findById(registration.event)
+      .populate('scanners', '_id')
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        status: 'invalid',
+        message: 'Event not found for this ticket'
+      })
+    }
+
+    // verify scanner authorization
+    const scannerId = req.user._id.toString()
+    const isAdmin = ['admin', 'super-admin'].includes(req.user.role)
+    const isCreator = event.createdBy.toString() === scannerId
+    const isScanner = event.scanners.some(s => s._id.toString() === scannerId)
+
+    if (!isAdmin && !isCreator && !isScanner) {
+      return res.status(403).json({
+        success: false,
+        status: 'unauthorized',
+        message: 'You are not authorized to scan tickets for this event'
+      })
+    }
+
+    // check if ticket already used
+    if (registration.used) {
+      return res.status(200).json({
+        success: true,
+        status: 'already_used',
+        message: 'Warning - Ticket Already Used!',
+        attendeeName: registration.user.name,
+        attendeeEmail: registration.user.email,
+        newCheckInCount: event.checkedInCount,
+        seatCapacity: event.seatCapacity
+      })
+    }
+
+    // atomically mark ticket as used AND increment checkedInCount
+    registration.used = true
+    await registration.save()
+
+    const updatedEvent = await Event.findByIdAndUpdate(
+      event._id,
+      { $inc: { checkedInCount: 1 } },
+      { new: true }
+    )
+
+    return res.status(200).json({
+      success: true,
+      status: 'verified',
+      message: 'Ticket Verified',
+      attendeeName: registration.user.name,
+      attendeeEmail: registration.user.email,
+      newCheckInCount: updatedEvent.checkedInCount,
+      seatCapacity: updatedEvent.seatCapacity
+    })
+  } catch (error) {
+    console.error('Scan ticket error:', error)
+    res.status(500).json({
+      success: false,
+      status: 'error',
+      message: 'Server error while scanning ticket'
     })
   }
 }
@@ -356,9 +465,11 @@ exports.unregisterEvent = async (req, res) => {
       return res.status(400).json({ message: 'Event not found' })
     }
 
-    const regEntry = event.registeredUsers.find(
-      (u) => u.user.toString() === userid
-    )
+    // find and delete the registration
+    const regEntry = await EventRegistration.findOneAndDelete({
+      event: eventid,
+      user: userid
+    })
 
     if (!regEntry) {
       return res
@@ -369,18 +480,14 @@ exports.unregisterEvent = async (req, res) => {
     // delete QR from cloudinary
     if (regEntry.token) {
       try {
-        await cloudinary.uploader.destroy(regEntry.token) // token holds the Cloudinary public_id
+        await cloudinary.uploader.destroy(regEntry.token)
       } catch (err) {
         console.error('Error deleting QR from Cloudinary:', err.message)
       }
     }
 
-    // remove the registered user entry from event
-    const updatedEvent = await Event.findByIdAndUpdate(
-      eventid,
-      { $pull: { registeredUsers: { user: userid } } },
-      { new: true }
-    ).populate('registeredUsers.user', 'name email')
+    // decrement attendee count atomically
+    await Event.findByIdAndUpdate(eventid, { $inc: { attendeeCount: -1 } })
 
     // send cancellation email
     const text = `Hi ${user.name},
@@ -392,10 +499,18 @@ exports.unregisterEvent = async (req, res) => {
 
     await sendEmail(user.email, `Unregistered from ${event.title}`, text)
 
+    // fetch updated event with registrations for response
+    const updatedEvent = await Event.findById(eventid)
+    const registeredUsers = await EventRegistration.find({ event: eventid })
+      .populate('user', 'name email')
+      .lean()
+    const eventObj = updatedEvent.toObject()
+    eventObj.registeredUsers = registeredUsers
+
     res.status(200).json({
       success: true,
       message: 'User successfully unregistered from the event',
-      data: updatedEvent
+      data: eventObj
     })
   } catch (error) {
     console.error('Error in unregistering:', error)
@@ -454,7 +569,7 @@ exports.updateEvent = async (req, res) => {
     // handle thumbnail file
     if (req.file) updates.thumbnail = req.file.filename
 
-    // pdate event
+    // update event
     const event = await Event.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true
@@ -475,6 +590,10 @@ exports.deleteEvent = async (req, res) => {
     const event = await Event.findById(id)
     if (!event) return res.status(404).json({ message: 'Event not found' })
     await cloudinary.uploader.destroy(event.publicId)
+
+    // clean up all registrations for this event
+    await EventRegistration.deleteMany({ event: id })
+
     await event.deleteOne()
     res.status(200).json({ message: 'Event deleted successfully' })
   } catch (error) {
@@ -508,7 +627,7 @@ exports.changeStatus = async (req, res) => {
     <p>👉 Share your event link with others to start registrations:  
     <a href="${process.env.CLIENT_URL}/events/${event.slug}" target="_blank">View Event</a></p>
 
-    <p>Thank you for choosing our platform to host your event—we’re excited to see it come to life!</p>
+    <p>Thank you for choosing our platform to host your event—we're excited to see it come to life!</p>
 
     <p>Best regards,<br>
     Team ISA</p>
@@ -558,10 +677,16 @@ exports.changeStatus = async (req, res) => {
 exports.registeredEvents = async (req, res) => {
   try {
     const { userid } = req.params
-    const events = await Event.find({ 'registeredUsers.user': userid })
-    if (events.length === 0) {
+
+    // find all event IDs the user is registered for
+    const registrations = await EventRegistration.find({ user: userid }).distinct('event')
+
+    if (registrations.length === 0) {
       return res.status(404).json({ message: 'No registerd events.' })
     }
+
+    const events = await Event.find({ _id: { $in: registrations } })
+
     res.status(200).json(events)
   } catch (err) {
     res

@@ -1,13 +1,14 @@
 import { useAuth } from "@/context/AuthContext";
-import Spinner from "./ui/Spinner";
 import Login from "@/pages/authentication/Login";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 
 const PrivateRoute = () => {
   const { userInfo, isLoggedIn } = useAuth();
+  const location = useLocation();
 
   if (!isLoggedIn || !userInfo?.user) {
-    return <Login />;
+    // Pass the current intended path so Login can redirect back after auth
+    return <Login redirectTo={location.pathname + location.search} />;
   }
 
   return <Outlet />;

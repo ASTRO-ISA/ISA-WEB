@@ -290,14 +290,17 @@ const EventDetails = () => {
     fetchEvent();
   }, [slug]);
 
+  const normalizeUserId = (id: any) => (id ? String(id) : null)
+
   const isRegistered = () =>
-    event?.registeredUsers.some(
-      (e: any) => e.user === userInfo?.user?._id
-    );
+    event?.registeredUsers?.some((e: any) => {
+      const registeredUserId = normalizeUserId(e?.user?._id || e?.user)
+      return registeredUserId === normalizeUserId(userInfo?.user?._id)
+    })
 
   const isSoldOut = () =>
     event?.seatCapacity &&
-    event.registeredUsers.length >= event.seatCapacity &&
+    (event.attendeeCount ?? 0) >= event.seatCapacity &&
     !isRegistered();
 
   const isScanner = event?.scanners?.some(
@@ -460,7 +463,7 @@ const downloadRegisteredUsers = async () => {
               </div>
               <div className="flex items-center text-gray-400">
                 <Users className="h-5 w-5 mr-2 text-space-accent" />
-                {event.registeredUsers.length} attending
+                {event.attendeeCount ?? 0} attending
               </div>
               <div className="flex items-center text-gray-400">
                 <Video className="h-5 w-5 mr-2 text-space-accent" />

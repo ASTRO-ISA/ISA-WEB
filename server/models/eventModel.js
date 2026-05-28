@@ -30,6 +30,10 @@ const eventSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  checkedInCount: {
+    type: Number,
+    default: 0
+  },
   seatCapacity: {
     type: Number,
     default: 0,
@@ -55,26 +59,10 @@ const eventSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['upcoming', 'completed'],
-    required: true
+    // enum: ['upcoming', 'completed'],
+    // required: true
+    default: 'upcoming'
   },
-  registeredUsers: [
-    {
-      user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-      },
-      token: {
-        type: String,
-        required: true
-      },
-      used: {
-        type: Boolean,
-        default: false // mark true when scanned
-      }
-    }
-  ],
   scanners: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -134,7 +122,6 @@ const eventSchema = new mongoose.Schema({
   }
 })
 
-eventSchema.index({ 'registeredUsers.token': 1 }, { unique: true, sparse: true })
 
 eventSchema.pre('validate', function (next) {
   if (this.title && !this.slug) {

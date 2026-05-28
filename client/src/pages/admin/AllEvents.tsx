@@ -232,7 +232,7 @@ const AllEvents = () => {
                           <div className="flex items-center text-sm text-gray-400">
                             <Users className="h-4 w-4 mr-2 text-space-accent" />
                             <span>
-                              {event.registeredUsers.length} attending
+                              {event.attendeeCount ?? 0} attending
                             </span>
                           </div>
                         </div>

@@ -211,3 +211,37 @@ exports.resendOtp = async (req, res) => {
     res.status(500).json({ status: 'fail', message: error.message })
   }
 }
+
+exports.scannerLogin = async (req, res) => {
+  try {
+    const { scannerToken } = req.body
+
+    if (!scannerToken) {
+      return res.status(400).json({ status: 'fail', message: 'Scanner token is required' })
+    }
+
+    // Verify the scanner token
+    let decoded
+    try {
+      decoded = jwt.verify(scannerToken, process.env.JWT_SECRET)
+    } catch (err) {
+      return res.status(401).json({ status: 'fail', message: 'Invalid or expired scanner link' })
+    }
+
+    // Ensure this token was issued for scanner login purpose
+    if (decoded.purpose !== 'scanner-login') {
+      return res.status(401).json({ status: 'fail', message: 'Invalid token type' })
+    }
+
+    const user = await User.findById(decoded.id)
+    if (!user) {
+      return res.status(404).json({ status: 'fail', message: 'User not found' })
+    }
+
+    // Set the JWT cookie and respond with user data (auto-login)
+    generateAndSendToken.createSendToken(user, 200, res)
+  } catch (error) {
+    res.status(500).json({ status: 'fail', message: error.message })
+  }
+}
+

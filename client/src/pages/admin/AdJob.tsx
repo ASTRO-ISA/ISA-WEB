@@ -52,9 +52,11 @@ const AdminJobs = () => {
   const createJobMutation = useMutation({
     mutationFn: async () => {
       const formData = new FormData();
-      Object.entries(newJobFormData).forEach(([key, val]) =>
-        formData.append(key, val)
-      );
+      Object.entries(newJobFormData).forEach(([key, val]) => {
+        if (val !== null && val !== undefined) {
+          formData.append(key, val);
+        }
+      });
 
       await api.post(`/jobs/`, formData, {
         withCredentials: true,
@@ -207,7 +209,6 @@ const AdminJobs = () => {
                 name="document"
                 onChange={handleNewJobFormChange}
                 className="w-full p-2 rounded bg-gray-800 text-white"
-                required
               />
             </label>
 

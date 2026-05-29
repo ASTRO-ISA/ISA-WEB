@@ -20,19 +20,20 @@ exports.createJob = async (req, res) => {
         .status(400)
         .json({ status: 'fail', message: 'No data provided' })
 
-    if (!req.file.path || !req.file.filename) {
-      return res
-        .status(400)
-        .json({ status: 'fail', message: 'File path from cloudinary missing.' })
-    }
-    const newJob = await JobPost.create({
+    const jobData = {
       title: req.body.title,
       role: req.body.role,
       applyLink: req.body.applyLink,
-      documentUrl: req.file.path,
-      documentPublicId: req.file.filename,
       description: req.body.description
-    })
+    }
+
+    // only attach document fields if a file was uploaded
+    if (req.file) {
+      jobData.documentUrl = req.file.path
+      jobData.documentPublicId = req.file.filename
+    }
+
+    const newJob = await JobPost.create(jobData)
 
     res.locals.documentId = newJob._id
 

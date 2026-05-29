@@ -19,6 +19,7 @@ const CreateEvent = () => {
     // status: "",
     isFree: true,
     fee: "",
+    isTicketRequired: true,
   });
 
   const [thumbnailFile, setThumbnailFile] = useState(null);
@@ -30,7 +31,7 @@ const CreateEvent = () => {
 
   const handleChange = (e, idx = null) => {
     const { name, value, type } = e.target;
-  
+
     if (name.startsWith("hostedBy") && idx !== null) {
       const updatedHosts = [...formData.hostedBy];
       updatedHosts[idx].name = value;
@@ -38,6 +39,9 @@ const CreateEvent = () => {
     } else if (name === "isFree") {
       const isFree = value === "true";
       setFormData({ ...formData, isFree, fee: isFree ? "" : formData.fee });
+    } else if (name === "isTicketRequired") {
+      const isTicketRequired = value === "true";
+      setFormData({ ...formData, isTicketRequired });
     } else if (type === "number") {
       setFormData({ ...formData, [name]: Number(value) });
     } else {
@@ -115,8 +119,9 @@ const CreateEvent = () => {
         presentedBy: "",
         type: "",
         // status: "",
-        isFree: true,   
-        fee: "",      
+        isFree: true,
+        fee: "",
+        isTicketRequired: true,
       });
       setThumbnailFile(null);
       navigate("/events");
@@ -321,39 +326,59 @@ const CreateEvent = () => {
             </div> */}
 
             <div>
-  <label htmlFor="isFree" className="block text-sm text-gray-400">
-    Event Type:
-  </label>
-  <select
-    id="isFree"
-    name="isFree"
-    value={formData.isFree ? "true" : "false"}
-    onChange={handleChange}
-    className="w-full p-2 rounded bg-zinc-800"
-    required
-  >
-    <option value="true">Free</option>
-    {/* <option value="false">Paid</option> */}
-  </select>
-</div>
+              <label htmlFor="isFree" className="block text-sm text-gray-400">
+                Event Type:
+              </label>
+              <select
+                id="isFree"
+                name="isFree"
+                value={formData.isFree ? "true" : "false"}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-zinc-800"
+                required
+              >
+                <option value="true">Free</option>
+                {/* <option value="false">Paid</option> */}
+              </select>
+            </div>
 
-{!formData.isFree && (
-  <div>
-    <label htmlFor="fee" className="block text-sm text-gray-400">
-      Fee Amount (₹):
-    </label>
-    <input
-      id="fee"
-      name="fee"
-      type="number"
-      value={formData.fee}
-      onChange={handleChange}
-      className="w-full p-2 rounded bg-zinc-800"
-      min="1"
-      required
-    />
-  </div>
-)}
+            {!formData.isFree && (
+              <div>
+                <label htmlFor="fee" className="block text-sm text-gray-400">
+                  Fee Amount (₹):
+                </label>
+                <input
+                  id="fee"
+                  name="fee"
+                  type="number"
+                  value={formData.fee}
+                  onChange={handleChange}
+                  className="w-full p-2 rounded bg-zinc-800"
+                  min="1"
+                  required
+                />
+              </div>
+            )}
+
+            {/* Ticket Required Toggle */}
+            <div>
+              <label htmlFor="isTicketRequired" className="block text-sm text-gray-400">
+                Require Entry Ticket
+              </label>
+              <select
+                id="isTicketRequired"
+                name="isTicketRequired"
+                value={formData.isTicketRequired ? "true" : "false"}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-zinc-800"
+              >
+                <option value="true">Yes – Generate ticket with QR code</option>
+                <option value="false">No – No ticket needed</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                If disabled, registrants won't receive a QR code.
+              </p>
+            </div>
 
             {/* Submit Button */}
             <button

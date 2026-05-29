@@ -107,6 +107,10 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isTicketRequired: {
+    type: Boolean,
+    default: true
+  },
   fee: {
     type: Number,
     min: [0, 'Fee cannot be negative'],

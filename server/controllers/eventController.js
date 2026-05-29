@@ -25,7 +25,8 @@ exports.createEvent = async (req, res) => {
       // status,
       isFree,
       fee,
-      seatCapacity
+      seatCapacity,
+      isTicketRequired
     } = req.body
 
     isFree = isFree === 'true' || isFree === true
@@ -62,6 +63,9 @@ exports.createEvent = async (req, res) => {
     // slug for clean URLs
     const slug = slugify(title, { lower: true, strict: true })
 
+    // parse isTicketRequired boolean (default true)
+    isTicketRequired = isTicketRequired === 'false' || isTicketRequired === false ? false : true
+
     // prepare event data
     const eventData = {
       title,
@@ -81,6 +85,7 @@ exports.createEvent = async (req, res) => {
       isFree,
       fee,
       seatCapacity,
+      isTicketRequired,
       attendeeCount: 0
     }
 
@@ -304,37 +309,56 @@ exports.registerEvent = async (req, res) => {
     await session.commitTransaction()
     // end txn
 
-    // generate QR code (outside transaction — non-critical)
-    const qrDataUrl = await QRCode.toDataURL(registrationToken)
-    const qrBuffer = await QRCode.toBuffer(registrationToken)
+    // send confirmation email — with or without QR based on isTicketRequired
+    if (event.isTicketRequired) {
+      // generate QR code (outside transaction — non-critical)
+      const qrDataUrl = await QRCode.toDataURL(registrationToken)
+      const qrBuffer = await QRCode.toBuffer(registrationToken)
 
-    // upload QR code to Cloudinary
-    const uploaded = await cloudinary.uploader.upload(qrDataUrl, {
-      folder: 'event_qrcodes'
-    })
+      // upload QR code to Cloudinary
+      const uploaded = await cloudinary.uploader.upload(qrDataUrl, {
+        folder: 'event_qrcodes'
+      })
 
-    // email content using template
-    const emailContent = registrationConfirmTemplate({
-      userName: user.name,
-      eventTitle: event.title,
-      eventDate: new Date(event.eventDate).toDateString(),
-      eventLocation: event.location,
-      qrImageUrl: uploaded.secure_url
-    })
+      // email content using template (with QR)
+      const emailContent = registrationConfirmTemplate({
+        userName: user.name,
+        eventTitle: event.title,
+        eventDate: new Date(event.eventDate).toDateString(),
+        eventLocation: event.location,
+        qrImageUrl: uploaded.secure_url,
+        isTicketRequired: true
+      })
 
-    // send email with QR attachment
-    await sendEmailWithAttachment(
-      user.email,
-      `Registered for ${event.title}`,
-      emailContent,
-      [
-        {
-          filename: 'qrcode.png',
-          content: qrBuffer,
-          cid: 'qrcode@event'
-        }
-      ]
-    )
+      // send email with QR attachment
+      await sendEmailWithAttachment(
+        user.email,
+        `Registered for ${event.title}`,
+        emailContent,
+        [
+          {
+            filename: 'qrcode.png',
+            content: qrBuffer,
+            cid: 'qrcode@event'
+          }
+        ]
+      )
+    } else {
+      // no ticket needed — send simple confirmation without QR
+      const emailContent = registrationConfirmTemplate({
+        userName: user.name,
+        eventTitle: event.title,
+        eventDate: new Date(event.eventDate).toDateString(),
+        eventLocation: event.location,
+        isTicketRequired: false
+      })
+
+      await sendEmail(
+        user.email,
+        `Registered for ${event.title}`,
+        emailContent
+      )
+    }
 
     // fetch updated event with registrations for response
     const freshEvent = await Event.findById(eventid)
@@ -534,6 +558,11 @@ exports.updateEvent = async (req, res) => {
       if (updates.isFree) {
         updates.fee = 0
       }
+    }
+
+    // parse isTicketRequired boolean
+    if (updates.isTicketRequired !== undefined) {
+      updates.isTicketRequired = updates.isTicketRequired === 'true' || updates.isTicketRequired === true
     }
 
     // convert fee to number if it's paid

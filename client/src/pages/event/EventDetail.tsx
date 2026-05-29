@@ -538,17 +538,19 @@ const downloadRegisteredUsers = async () => {
                   {deleting ? <Spinner /> : "Delete Event"}
                 </button>
 
-                <button
-                  onClick={() => navigate(`/events/scanner/${event.slug}`)}
-                  className="bg-space-purple text-white px-3 py-1 rounded"
-                >
-                  Scan / Manage Scanners
-                </button>
+                {event.isTicketRequired && (
+                  <button
+                    onClick={() => navigate(`/events/scanner/${event.slug}`)}
+                    className="bg-space-purple text-white px-3 py-1 rounded"
+                  >
+                    Scan / Manage Scanners
+                  </button>
+                )}
               </div>
             </>
           )}
 
-          {isScanner && (
+          {isScanner && event.isTicketRequired && (
             <button
               onClick={() => navigate(`/events/scanner/${event.slug}`)}
               className="bg-space-purple text-white px-3 py-1 rounded mt-4"

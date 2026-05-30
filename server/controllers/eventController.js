@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require('uuid')
 const QRCode = require('qrcode')
 const PaymentTransaction = require('../models/transactionsModel')
 const registrationConfirmTemplate = require('../utils/emailTemplates/registrationConfirmTemplate')
+const eventTimeUpdateTemplate = require('../utils/emailTemplates/eventTimeUpdateTemplate')
 
 exports.createEvent = async (req, res) => {
   try {
@@ -127,10 +128,31 @@ exports.approvedEvents = async (req, res) => {
   try {
     const events = await Event.find({ statusAR: 'approved' })
       .sort({ createdAt: -1 })
+      .lean()
     if (!events) {
       return res.status(404).json({ message: 'Event not found' })
     }
-    res.status(200).json(events)
+
+    // attach registeredUsers so the client can check registration status
+    const eventIds = events.map(e => e._id)
+    const registrations = await EventRegistration.find({ event: { $in: eventIds } })
+      .populate('user', '_id name email')
+      .lean()
+
+    // group registrations by event id
+    const regMap = {}
+    for (const reg of registrations) {
+      const eid = reg.event.toString()
+      if (!regMap[eid]) regMap[eid] = []
+      regMap[eid].push(reg)
+    }
+
+    const eventsWithRegs = events.map(e => ({
+      ...e,
+      registeredUsers: regMap[e._id.toString()] || []
+    }))
+
+    res.status(200).json(eventsWithRegs)
   } catch (err) {
     res.status(500).json({ message: 'Server error in get events' })
   }
@@ -552,9 +574,9 @@ exports.updateEvent = async (req, res) => {
     if (updates.isFree !== undefined) {
       updates.isFree = updates.isFree === 'true'
 
-      // when switching to free, overwrite fee to 0
+      // when switching to free, clear fee
       if (updates.isFree) {
-        updates.fee = 0
+        updates.fee = null
       }
     }
 
@@ -564,7 +586,7 @@ exports.updateEvent = async (req, res) => {
     }
 
     // convert fee to number if it's paid
-    if (!updates.isFree && updates.fee !== undefined && updates.fee !== '') {
+    if (updates.isFree === false && updates.fee !== undefined && updates.fee !== '') {
       updates.fee = Number(updates.fee)
     }
 
@@ -594,15 +616,56 @@ exports.updateEvent = async (req, res) => {
     }
 
     // handle thumbnail file
-    if (req.file) updates.thumbnail = req.file.filename
+    if (req.file) {
+      updates.thumbnail = req.file.path
+      updates.publicId = req.file.filename
+    }
 
-    // update event
-    const event = await Event.findByIdAndUpdate(id, updates, {
-      new: true,
-      runValidators: true
-    })
-
+    // update event using save() so validators have proper document context
+    const event = await Event.findById(id)
     if (!event) return res.status(404).json({ message: 'Event not found' })
+
+    // capture old date before applying updates (for time change detection)
+    const oldEventDate = event.eventDate ? new Date(event.eventDate) : null
+
+    // apply updates to the document
+    Object.assign(event, updates)
+    await event.save()
+
+    // check if eventDate changed and notify registered users
+    const newEventDate = event.eventDate ? new Date(event.eventDate) : null
+    if (oldEventDate && newEventDate && oldEventDate.getTime() !== newEventDate.getTime()) {
+      // format dates in IST for the email
+      const formatIST = (date) => {
+        return new Date(date).toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          dateStyle: 'full',
+          timeStyle: 'short'
+        })
+      }
+
+      const registrations = await EventRegistration.find({ event: id })
+        .populate('user', 'name email')
+        .lean()
+
+      const eventUrl = `${process.env.CLIENT_URL}/events/${event.slug}`
+
+      // send emails in background (don't block the response)
+      for (const reg of registrations) {
+        if (reg.user?.email) {
+          const html = eventTimeUpdateTemplate({
+            userName: reg.user.name,
+            eventTitle: event.title,
+            oldDate: formatIST(oldEventDate),
+            newDate: formatIST(newEventDate),
+            eventLocation: event.location,
+            eventUrl
+          })
+          sendEmail(reg.user.email, `Schedule Update: ${event.title}`, html)
+            .catch(err => console.error(`Failed to send time update email to ${reg.user.email}:`, err))
+        }
+      }
+    }
 
     res.status(200).json(event)
   } catch (error) {

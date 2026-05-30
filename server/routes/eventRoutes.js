@@ -66,7 +66,8 @@ router.patch('/:id/toggle-registration',
 router
   .route('/:id')
   .put(
-    restrictTo(['admin', 'super-admin']), 
+    restrictTo(['admin', 'super-admin']),
+    uploadImage.single('thumbnail'),
     auditLog('UPDATE_EVENT', 'Event'),
     eventController.updateEvent
   )

@@ -9,11 +9,11 @@ const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadImage = multer({ storage: imageStorage('event-banners') })
 
-// ── Public routes (no auth) ──
+// public routes (no auth)
 router.route('/').get(eventController.approvedEvents)
 
-// ── Authenticated routes ──
-// These are defined BEFORE the public /:slug catch-all so they match first
+// authenticated routes
+// these are defined BEFORE the public /:slug catch-all so they match first
 const authRouter = express.Router()
 authRouter.use(authenticateToken)
 
@@ -76,10 +76,10 @@ authRouter
 
 authRouter.route('/:slug/download-attendees').get(eventController.downloadEventAttendees)
 
-// Mount auth routes first so /pending, /all, etc. are matched before /:slug
+// mount auth routes first so /pending, /all, etc. are matched before /:slug
 router.use('/', authRouter)
 
-// ── Public catch-all (must be LAST) ──
+// public catch-all (must be LAST)
 // /:slug matches any single path segment — if it were earlier, it would
 // swallow /pending, /all, /create, etc.
 router.route('/:slug').get(eventController.getEvent)

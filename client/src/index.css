@@ -279,7 +279,7 @@
 }
 
 html, body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* ─── Quill rendered content styles (.ql-content) ───── */
@@ -308,8 +308,28 @@ html, body {
 .ql-content h3 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .ql-content h4 { font-size: 1.125rem; margin: 1.25rem 0 0.65rem; }
 
+/* Smaller content headings on mobile (must be < blog title's 1.55rem) */
+@media (max-width: 768px) {
+  .ql-content h1 { font-size: 1.35rem;  margin: 1.5rem 0 0.75rem; }
+  .ql-content h2 { font-size: 1.15rem;  margin: 1.25rem 0 0.625rem; }
+  .ql-content h3 { font-size: 1.05rem;  margin: 1rem 0 0.5rem; }
+  .ql-content h4 { font-size: 0.95rem;  margin: 0.875rem 0 0.45rem; }
+}
+
 .ql-content p {
-  margin-bottom: 1.2rem;
+  margin-bottom: 0.6rem;
+}
+
+/* Quill generates <p><br></p> for empty lines — collapse them */
+.ql-content p:empty,
+.ql-content p:has(> br:only-child) {
+  margin-bottom: 0.15rem;
+  line-height: 0.5;
+}
+
+/* Remove extra whitespace at the very bottom */
+.ql-content > *:last-child {
+  margin-bottom: 0;
 }
 
 .ql-content ul,

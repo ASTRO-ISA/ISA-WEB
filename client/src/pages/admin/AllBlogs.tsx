@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, Clock, MoreVertical } from "lucide-react";
+import { Calendar, Clock, MoreVertical, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
@@ -179,6 +179,15 @@ const AllBlogs = () => {
                       >
                         <DropdownMenuItem onSelect={() => handleShare(blog)}>
                           Share
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                          <Link
+                            to={`/blogs/edit/${blog.slug}`}
+                            className="flex items-center gap-2"
+                          >
+                            <Pencil size={14} /> Edit
+                          </Link>
                         </DropdownMenuItem>
 
                         {/* Admin Response Textarea */}

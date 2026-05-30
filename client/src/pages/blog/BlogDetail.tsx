@@ -192,14 +192,14 @@ const BlogDetail = () => {
   return (
     <div className="min-h-screen bg-space-dark text-white">
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Flex row: ToC on LEFT, article on RIGHT */}
-          <div className={`flex gap-10 ${tocItems.length > 0 ? "md:flex-row" : ""} flex-col`}>
+          <div className={`flex gap-10 lg:gap-16 ${tocItems.length > 0 ? "md:flex-row" : ""} flex-col`}>
 
             {/* ── ToC Sidebar (md+ only, left side) ── */}
             {tocItems.length > 0 && (
-              <aside className="hidden md:block w-64 shrink-0">
-                <div className="sticky top-28">
+              <aside className="hidden md:block w-64 shrink-0 self-start sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto no-scrollbar">
+                <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">
                     On this page
                   </p>
@@ -214,13 +214,11 @@ const BlogDetail = () => {
                             .getElementById(item.id)
                             ?.scrollIntoView({ behavior: "smooth" });
                         }}
-                        className={`block text-sm py-1 transition-all duration-150 truncate ${
-                          item.level === 1 ? "pl-0" : item.level === 2 ? "pl-3" : "pl-6"
-                        } ${
-                          activeId === item.id
+                        className={`block text-sm py-1 transition-all duration-150 truncate ${item.level === 1 ? "pl-0" : item.level === 2 ? "pl-3" : "pl-6"
+                          } ${activeId === item.id
                             ? "text-space-accent font-medium"
                             : "text-gray-500 hover:text-gray-300"
-                        }`}
+                          }`}
                       >
                         {item.text}
                       </a>
@@ -233,7 +231,7 @@ const BlogDetail = () => {
             {/* ── Main Content ── */}
             <article className={`flex-1 min-w-0 max-w-4xl ${tocItems.length === 0 ? "mx-auto" : ""}`}>
               {/* Thumbnail */}
-              <div className="rounded-xl overflow-hidden mb-8 aspect-[16/9]">
+              <div className="rounded-none md:rounded-xl overflow-hidden mb-0 md:mb-8 -mx-4 md:mx-0 aspect-[16/9]">
                 <img
                   src={blog.thumbnail}
                   alt={blog.title}
@@ -242,20 +240,23 @@ const BlogDetail = () => {
               </div>
 
               {/* Header */}
-              <div className="mb-6">
-                <h1 className="text-4xl font-bold mb-3 text-center leading-tight">
+              <div className="px-2 md:px-0 pt-6 md:pt-0 mb-4 md:mb-6">
+                <h1
+                  className="text-[1.55rem] leading-[1.25] md:text-4xl md:leading-tight font-bold text-center"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
                   {blog.title}
                 </h1>
                 {blog.description && (
-                  <p className="text-center text-gray-400 text-lg mb-4">
+                  <p className="text-center text-gray-400 text-[0.9rem] md:text-lg mt-3 md:mt-4 leading-relaxed italic">
                     {blog.description}
                   </p>
                 )}
-                <div className="flex flex-wrap items-center justify-center gap-4 text-gray-400 text-sm">
+                <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 md:gap-4 text-gray-400 text-xs md:text-sm mt-4 md:mt-5">
                   <span>
-                    BY:{" "}
+                    By:{" "}
                     <span className="text-gray-300 font-medium">
-                      {blog.author?.name?.toUpperCase()}
+                      {blog.author?.name}
                     </span>
                   </span>
                   <span>·</span>
@@ -265,7 +266,7 @@ const BlogDetail = () => {
                 </div>
               </div>
 
-              <hr className="border-gray-700 mb-8" />
+              <hr className="border-gray-700/60 mb-6 md:mb-8" />
 
               {/* Blog Content */}
               <div
@@ -275,18 +276,17 @@ const BlogDetail = () => {
               />
 
               {/* Like + Author section */}
-              <div className="mt-12 pt-6 border-t border-gray-700 space-y-6">
+              <div className="mt-6 md:mt-10 pt-6 border-t border-gray-700/60 space-y-6">
                 {/* Like button */}
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleLike}
                     disabled={likeMutation.isPending}
                     aria-label={isLiked ? "Unlike this blog" : "Like this blog"}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full border font-medium text-sm transition-all duration-200 ${
-                      isLiked
-                        ? "bg-rose-500/20 border-rose-500 text-rose-400 hover:bg-rose-500/30"
-                        : "bg-transparent border-gray-600 text-gray-400 hover:border-rose-400 hover:text-rose-400"
-                    }`}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full border font-medium text-sm transition-all duration-200 ${isLiked
+                      ? "bg-rose-500/20 border-rose-500 text-rose-400 hover:bg-rose-500/30"
+                      : "bg-transparent border-gray-600 text-gray-400 hover:border-rose-400 hover:text-rose-400"
+                      }`}
                   >
                     <Heart
                       className={`w-4 h-4 transition-all ${isLiked ? "fill-rose-400 stroke-rose-400" : ""}`}

@@ -269,7 +269,7 @@ const Blog = () => {
       });
     },
   });
-  
+
   const handleUnsaveBlog = (blogId) => {
     if (!isLoggedIn) {
       toast({
@@ -324,10 +324,10 @@ const Blog = () => {
   return (
     <div className="min-h-screen bg-space-dark text-white">
       {/* <Navbar /> */}
-            <Helmet>
-              <title>Blogs | ISA-India</title>
-              {/* <meta name="description" content="Learn about ISA-India's mission to expand access to space education in India." /> */}
-            </Helmet>
+      <Helmet>
+        <title>Blogs | ISA-India</title>
+        {/* <meta name="description" content="Learn about ISA-India's mission to expand access to space education in India." /> */}
+      </Helmet>
 
 
       <main className="container mx-auto px-4 pt-24 pb-16">
@@ -399,7 +399,7 @@ const Blog = () => {
                 {/* Author + Admin */}
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm text-gray-400">
-                    Author: {(featured.author?.name || "Unknown").toUpperCase()}
+                    Author: {(featured.author?.name || "Unknown")}
                   </h4>
 
                   <DropdownMenu>
@@ -427,10 +427,10 @@ const Blog = () => {
                         onClick={() =>
                           navigator.share
                             ? navigator.share({
-                                title: featured.title,
-                                text: "Check out this blog!",
-                                url: `${window.location.origin}/blogs/${featured.slug}`,
-                              })
+                              title: featured.title,
+                              text: "Check out this blog!",
+                              url: `${window.location.origin}/blogs/${featured.slug}`,
+                            })
                             : alert("Sharing not supported on this browser.")
                         }
                       >
@@ -438,19 +438,19 @@ const Blog = () => {
                       </DropdownMenuItem>
 
                       {savedBlogs.includes(featured._id) ? (
-                      <DropdownMenuItem
-                        onClick={() => handleUnsaveBlog(featured._id)}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        Unsave
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        onClick={() => handleSaveBlog(featured._id)}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        Save
-                      </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleUnsaveBlog(featured._id)}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          Unsave
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => handleSaveBlog(featured._id)}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          Save
+                        </DropdownMenuItem>
                       )}
 
                       {isAdmin && (
@@ -538,19 +538,19 @@ const Blog = () => {
                         <div className="flex items-center justify-between">
                           <h4 className="text-sm text-gray-400">
                             Author:{" "}
-                            {(blog.author?.name || "Unknown").toUpperCase()}
+                            {(blog.author?.name || "Unknown")}
                           </h4>
 
                           {/* Dropdown Menu */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
-                              variant="ghost"
-                              className="p-1 text-white bg-transparent hover:bg-transparent"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
+                                variant="ghost"
+                                className="p-1 text-white bg-transparent hover:bg-transparent"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
                               >
                                 <MoreVertical className="w-5 h-5 text-gray-400" />
                               </Button>
@@ -563,34 +563,34 @@ const Blog = () => {
                               // className="bg-white text-black border border-gray-200 shadow-md z-[9999]"
                               side="top"
                             >
-                            <DropdownMenuItem
-                              className="flex items-center gap-2 cursor-pointer"
-                              onClick={() =>
-                                navigator.share
-                                  ? navigator.share({
+                              <DropdownMenuItem
+                                className="flex items-center gap-2 cursor-pointer"
+                                onClick={() =>
+                                  navigator.share
+                                    ? navigator.share({
                                       title: blog.title,
                                       text: "Check out this blog!",
                                       url: `${window.location.origin}/blogs/${blog.slug}`,
                                     })
-                                  : alert("Sharing not supported on this browser.")
-                              }
-                            >
-                              Share
-                            </DropdownMenuItem>
+                                    : alert("Sharing not supported on this browser.")
+                                }
+                              >
+                                Share
+                              </DropdownMenuItem>
 
-                            {savedBlogs.includes(blog._id) ? (
-                            <DropdownMenuItem
-                              onClick={() => handleUnsaveBlog(blog._id)}
-                            >
-                              Unsave
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => handleSaveBlog(blog._id)}
-                            >
-                              Save
-                            </DropdownMenuItem>
-                            )}
+                              {savedBlogs.includes(blog._id) ? (
+                                <DropdownMenuItem
+                                  onClick={() => handleUnsaveBlog(blog._id)}
+                                >
+                                  Unsave
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => handleSaveBlog(blog._id)}
+                                >
+                                  Save
+                                </DropdownMenuItem>
+                              )}
 
                               {isAdmin && (
                                 <DropdownMenuItem

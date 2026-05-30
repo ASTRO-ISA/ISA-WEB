@@ -230,6 +230,55 @@ exports.userBlogs = async (req, res) => {
   }
 }
 
+exports.updateBlog = async (req, res) => {
+  try {
+    const { id } = req.params
+    const blog = await Blog.findById(id)
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' })
+    }
+
+    const updates = {}
+
+    // update title & regenerate slug
+    if (req.body.title && req.body.title !== blog.title) {
+      updates.title = req.body.title
+      const baseSlug = slugify(req.body.title, { lower: true, strict: true })
+      let slug = baseSlug
+      let counter = 1
+      while (await Blog.findOne({ slug, _id: { $ne: id } })) {
+        slug = `${baseSlug}-${counter++}`
+      }
+      updates.slug = slug
+    }
+
+    if (req.body.description !== undefined) {
+      updates.description = req.body.description
+    }
+
+    if (req.body.content !== undefined) {
+      updates.content = req.body.content
+    }
+
+    // handle thumbnail replacement
+    if (req.file) {
+      // destroy old thumbnail from Cloudinary
+      if (blog.publicId) {
+        await cloudinary.uploader.destroy(blog.publicId)
+      }
+      updates.thumbnail = req.file.path
+      updates.publicId = req.file.filename
+    }
+
+    Object.assign(blog, updates)
+    await blog.save()
+
+    res.status(200).json({ message: 'Blog updated successfully', blog })
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating blog', error: err.message })
+  }
+}
+
 exports.likeBlog = async (req, res) => {
   try {
     const { id } = req.params

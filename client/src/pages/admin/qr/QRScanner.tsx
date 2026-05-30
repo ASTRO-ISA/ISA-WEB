@@ -121,7 +121,6 @@ const QRScannerPage = () => {
     try {
       const res = await api.get(`/events/${slug}`)
       setEvent(res.data)
-      console.log('event data', res.data);
       setCheckedInCount(res.data.checkedInCount ?? 0)
       setTotalRegistrations(res.data.registeredUsers?.length ?? 0)
     } catch (err) {

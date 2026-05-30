@@ -12,7 +12,6 @@ const PaymentTransaction = require('../models/transactionsModel')
 const registrationConfirmTemplate = require('../utils/emailTemplates/registrationConfirmTemplate')
 
 exports.createEvent = async (req, res) => {
-  console.log(req.body)
   try {
     let {
       title,
@@ -96,7 +95,6 @@ exports.createEvent = async (req, res) => {
 
     res.status(201).json({ message: 'Event created successfully', event })
   } catch (error) {
-    console.log(error.message)
     res.status(500).json({ error: 'Failed to create event' })
   }
 }

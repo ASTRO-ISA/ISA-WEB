@@ -5,11 +5,12 @@ const multer = require('multer')
 const router = express.Router()
 const { imageStorage } = require('../utils/cloudinaryStorage')
 const restrictTo = require('../middlewares/restrictTo')
-const { auditLog } = require('../middlewares/auditLogger') 
+const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadImage = multer({ storage: imageStorage('event-banners') })
 
 router.route('/').get(eventController.approvedEvents)
+router.route('/:slug').get(eventController.getEvent)
 
 router.use(authenticateToken)
 
@@ -27,7 +28,7 @@ router
   )
 
 router.route('/scan').post(eventController.scanTicket)
-router.route('/:slug').get(eventController.getEvent)
+
 router.route('/:slug/download-attendees').get(eventController.downloadEventAttendees)
 
 router
@@ -45,7 +46,7 @@ router
 router
   .route('/status/:id')
   .patch(
-    restrictTo(['admin', 'super-admin']), 
+    restrictTo(['admin', 'super-admin']),
     auditLog('UPDATE_EVENT', 'Event'),
     eventController.changeStatus
   )
@@ -53,12 +54,12 @@ router
 router.route('/register/:eventid/:userid').patch(eventController.registerEvent)
 router.route('/unregister/:eventid/:userid').patch(eventController.unregisterEvent)
 
-router.delete('/:id', 
+router.delete('/:id',
   auditLog('DELETE_EVENT', 'Event'),
   eventController.deleteEvent
 )
 
-router.patch('/:id/toggle-registration', 
+router.patch('/:id/toggle-registration',
   auditLog('TOGGLE_REGISTRATION_EVENT', 'Event'),
   eventController.toggleRegistration
 )

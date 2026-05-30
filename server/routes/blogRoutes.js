@@ -42,6 +42,13 @@ router.route('/unlike/:id').delete(blogController.unlikeBlog)
 
 router.use(restrictTo(['admin', 'super-admin']))
 router.route('/status/:id').patch(auditLog('BLOG_STATUS', 'Blog'), blogController.changeStatus)
+router
+  .route('/update/:id')
+  .put(
+    uploadImage.single('thumbnail'),
+    auditLog('UPDATE_BLOG', 'Blog'),
+    blogController.updateBlog
+  )
 
 module.exports = router
 

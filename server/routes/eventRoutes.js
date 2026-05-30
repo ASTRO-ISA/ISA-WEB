@@ -9,29 +9,30 @@ const { auditLog } = require('../middlewares/auditLogger')
 
 const uploadImage = multer({ storage: imageStorage('event-banners') })
 
+// ── Public routes (no auth) ──
 router.route('/').get(eventController.approvedEvents)
-router.route('/:slug').get(eventController.getEvent)
 
-router.use(authenticateToken)
+// ── Authenticated routes ──
+// These are defined BEFORE the public /:slug catch-all so they match first
+const authRouter = express.Router()
+authRouter.use(authenticateToken)
 
-router
+authRouter
   .route('/pending')
   .get(
     restrictTo(['admin', 'super-admin']),
     eventController.pendingEvents
   )
-router
+authRouter
   .route('/all')
   .get(
     restrictTo(['admin', 'super-admin']),
     eventController.Events
   )
 
-router.route('/scan').post(eventController.scanTicket)
+authRouter.route('/scan').post(eventController.scanTicket)
 
-router.route('/:slug/download-attendees').get(eventController.downloadEventAttendees)
-
-router
+authRouter
   .route('/create')
   .post(
     uploadImage.single('thumbnail'),
@@ -39,11 +40,11 @@ router
     eventController.createEvent
   )
 
-router
+authRouter
   .route('/my-events/:userid')
   .get(eventController.registeredEvents)
 
-router
+authRouter
   .route('/status/:id')
   .patch(
     restrictTo(['admin', 'super-admin']),
@@ -51,20 +52,20 @@ router
     eventController.changeStatus
   )
 
-router.route('/register/:eventid/:userid').patch(eventController.registerEvent)
-router.route('/unregister/:eventid/:userid').patch(eventController.unregisterEvent)
+authRouter.route('/register/:eventid/:userid').patch(eventController.registerEvent)
+authRouter.route('/unregister/:eventid/:userid').patch(eventController.unregisterEvent)
 
-router.delete('/:id',
+authRouter.delete('/:id',
   auditLog('DELETE_EVENT', 'Event'),
   eventController.deleteEvent
 )
 
-router.patch('/:id/toggle-registration',
+authRouter.patch('/:id/toggle-registration',
   auditLog('TOGGLE_REGISTRATION_EVENT', 'Event'),
   eventController.toggleRegistration
 )
 
-router
+authRouter
   .route('/:id')
   .put(
     restrictTo(['admin', 'super-admin']),
@@ -72,5 +73,15 @@ router
     auditLog('UPDATE_EVENT', 'Event'),
     eventController.updateEvent
   )
+
+authRouter.route('/:slug/download-attendees').get(eventController.downloadEventAttendees)
+
+// Mount auth routes first so /pending, /all, etc. are matched before /:slug
+router.use('/', authRouter)
+
+// ── Public catch-all (must be LAST) ──
+// /:slug matches any single path segment — if it were earlier, it would
+// swallow /pending, /all, /create, etc.
+router.route('/:slug').get(eventController.getEvent)
 
 module.exports = router

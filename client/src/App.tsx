@@ -32,6 +32,7 @@ import UploadResearchPaper from "./pages/e-Learning/researchParper/UploadResearc
 import PrivateRoute from "./components/PrivateRoute";
 import OtpVerification from "./pages/authentication/OtpVerification";
 import EditEvent from "./pages/admin/admin-events/EditEvent";
+import EditBlog from "./pages/admin/admin-blogs/EditBlog";
 import QRScannerPage from "./pages/admin/qr/QRScanner";
 import PaymentStatus from "./components/PaymentVerify";
 import TermsAndConditions from "./pages/TermsConditions";
@@ -94,6 +95,7 @@ const App = () => {
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/events/edit/:slug" element={<EditEvent />} />
+              <Route path="/blogs/edit/:slug" element={<EditBlog />} />
               <Route path="/events/scanner/:slug" element={<QRScannerPage />} />
               <Route path="/payment-status" element={<PaymentStatus />} />
             </Route>

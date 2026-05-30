@@ -14,70 +14,72 @@ router.route('/').get(eventController.approvedEvents)
 
 // authenticated routes
 // these are defined BEFORE the public /:slug catch-all so they match first
-const authRouter = express.Router()
-authRouter.use(authenticateToken)
 
-authRouter
+router
   .route('/pending')
   .get(
+    authenticateToken,
     restrictTo(['admin', 'super-admin']),
     eventController.pendingEvents
   )
-authRouter
+router
   .route('/all')
   .get(
+    authenticateToken,
     restrictTo(['admin', 'super-admin']),
     eventController.Events
   )
 
-authRouter.route('/scan').post(eventController.scanTicket)
+router.route('/scan').post(authenticateToken, eventController.scanTicket)
 
-authRouter
+router
   .route('/create')
   .post(
+    authenticateToken,
     uploadImage.single('thumbnail'),
     auditLog('CREATE_EVENT', 'Event'),
     eventController.createEvent
   )
 
-authRouter
+router
   .route('/my-events/:userid')
-  .get(eventController.registeredEvents)
+  .get(authenticateToken, eventController.registeredEvents)
 
-authRouter
+router
   .route('/status/:id')
   .patch(
+    authenticateToken,
     restrictTo(['admin', 'super-admin']),
     auditLog('UPDATE_EVENT', 'Event'),
     eventController.changeStatus
   )
 
-authRouter.route('/register/:eventid/:userid').patch(eventController.registerEvent)
-authRouter.route('/unregister/:eventid/:userid').patch(eventController.unregisterEvent)
+router.route('/register/:eventid/:userid').patch(authenticateToken, eventController.registerEvent)
+router.route('/unregister/:eventid/:userid').patch(authenticateToken, eventController.unregisterEvent)
 
-authRouter.delete('/:id',
+router.delete('/:id',
+  authenticateToken,
   auditLog('DELETE_EVENT', 'Event'),
   eventController.deleteEvent
 )
 
-authRouter.patch('/:id/toggle-registration',
+router.patch('/:id/toggle-registration',
+  authenticateToken,
   auditLog('TOGGLE_REGISTRATION_EVENT', 'Event'),
   eventController.toggleRegistration
 )
 
-authRouter
+router
   .route('/:id')
   .put(
+    authenticateToken,
     restrictTo(['admin', 'super-admin']),
     uploadImage.single('thumbnail'),
     auditLog('UPDATE_EVENT', 'Event'),
     eventController.updateEvent
   )
 
-authRouter.route('/:slug/download-attendees').get(eventController.downloadEventAttendees)
-
-// mount auth routes first so /pending, /all, etc. are matched before /:slug
-router.use('/', authRouter)
+router.route('/:slug/download-attendees').get(authenticateToken, eventController.downloadEventAttendees)
 
 // public catch-all (must be LAST)
 // /:slug matches any single path segment — if it were earlier, it would

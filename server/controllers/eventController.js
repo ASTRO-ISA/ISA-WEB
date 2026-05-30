@@ -203,10 +203,16 @@ exports.getEvent = async (req, res) => {
 exports.downloadEventAttendees = async (req, res) => {
   const { slug } = req.params
   try {
-    const event = await Event.findOne({ slug }).select('title slug')
+    const event = await Event.findOne({ slug }).select('title slug createdBy')
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' })
+    }
+
+    const isAdmin = ['admin', 'super-admin'].includes(req.user.role)
+    const isCreator = event.createdBy && event.createdBy.toString() === req.user.id
+    if (!isAdmin && !isCreator) {
+      return res.status(403).json({ message: 'Unauthorized to download attendees' })
     }
 
     // query registrations from the separate collection
@@ -499,6 +505,10 @@ exports.unregisterEvent = async (req, res) => {
   try {
     const { eventid, userid } = req.params
 
+    if (req.user.id !== userid) {
+      return res.status(403).json({ message: "Unauthorized to unregister this user" })
+    }
+
     const event = await Event.findById(eventid)
     const user = await User.findById(userid)
 
@@ -679,6 +689,13 @@ exports.deleteEvent = async (req, res) => {
   try {
     const event = await Event.findById(id)
     if (!event) return res.status(404).json({ message: 'Event not found' })
+
+    const isAdmin = ['admin', 'super-admin'].includes(req.user.role)
+    const isCreator = event.createdBy && event.createdBy.toString() === req.user.id
+    if (!isAdmin && !isCreator) {
+      return res.status(403).json({ message: 'Unauthorized to delete this event' })
+    }
+
     await cloudinary.uploader.destroy(event.publicId)
 
     // clean up all registrations for this event
@@ -768,6 +785,10 @@ exports.registeredEvents = async (req, res) => {
   try {
     const { userid } = req.params
 
+    if (req.user.id !== userid) {
+      return res.status(403).json({ message: "Unauthorized to view these events" })
+    }
+
     // find all event IDs the user is registered for
     const registrations = await EventRegistration.find({ user: userid }).distinct('event')
 
@@ -793,6 +814,12 @@ exports.toggleRegistration = async (req, res) => {
     const event = await Event.findById(id)
     if (!event) {
       return res.status(404).json({ success: false, message: 'Event not found' })
+    }
+
+    const isAdmin = ['admin', 'super-admin'].includes(req.user.role)
+    const isCreator = event.createdBy && event.createdBy.toString() === req.user.id
+    if (!isAdmin && !isCreator) {
+      return res.status(403).json({ success: false, message: 'Unauthorized to toggle registration' })
     }
 
     // Toggle registration status

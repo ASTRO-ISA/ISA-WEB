@@ -22,6 +22,7 @@ interface EventFormData {
   status: string;
   isFree: boolean;
   fee: string;
+  isTicketRequired: boolean;
 }
 
 export default function EditEvent() {
@@ -45,9 +46,20 @@ export default function EditEvent() {
     status: "",
     isFree: true,
     fee: "",
+    isTicketRequired: true,
   });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Convert ISO UTC string to local datetime-local format (YYYY-MM-DDTHH:mm)
+  const toLocalDatetimeString = (isoString: string | undefined): string => {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "";
+    // Pad to 2 digits
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
 
   // Fetch Event Details
   useEffect(() => {
@@ -59,17 +71,18 @@ export default function EditEvent() {
         setEventFormData({
           title: event.title ?? "",
           description: event.description ?? "",
-          eventDate: event.eventDate?.slice(0, 16) ?? "",
-          eventEndTime: event.eventEndTime?.slice(0, 16) ?? "",
+          eventDate: toLocalDatetimeString(event.eventDate),
+          eventEndTime: toLocalDatetimeString(event.eventEndTime),
           location: event.location ?? "",
-          seatCapacity: event.seatCapacity ?? 0,
+          seatCapacity: event.seatCapacity?.toString() ?? "",
           eventType: event.eventType ?? "",
           hostedBy: event.hostedBy?.length ? event.hostedBy : [{ name: "" }],
           presentedBy: event.presentedBy ?? "",
           type: event.type ?? "",
           status: event.status ?? "",
           isFree: event.isFree ?? true,
-          fee: event.fee ?? "",
+          fee: event.fee ? event.fee.toString() : "",
+          isTicketRequired: event.isTicketRequired ?? true,
         });
       })
       .catch(err => {
@@ -90,15 +103,21 @@ export default function EditEvent() {
       updatedHosts[idx] = { name: value };
       setEventFormData({ ...eventFormData, hostedBy: updatedHosts });
     } else if (name === "isFree") {
+      const isFree = value === "true";
       setEventFormData({ 
         ...eventFormData, 
-        isFree: value === "true", 
-        fee: value === "true" ? "0" : eventFormData.fee 
+        isFree, 
+        fee: isFree ? "" : eventFormData.fee 
+      });
+    } else if (name === "isTicketRequired") {
+      setEventFormData({ 
+        ...eventFormData, 
+        isTicketRequired: value === "true" 
       });
     } else if (type === "number") {
       setEventFormData({ 
         ...eventFormData, 
-        [name]: value === "" ? "" : Number(value) 
+        [name]: value === "" ? "" : value 
       });
     } else {
       setEventFormData({ ...eventFormData, [name]: value });
@@ -119,13 +138,20 @@ export default function EditEvent() {
         if (!eventId) throw new Error('Event ID is missing')
       const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
-          if (key === "hostedBy") formData.append(key, JSON.stringify(value))
-          else if (key === "isFree") formData.append(key, value ? "true" : "false")
-          else if (key === "fee") {
-            if (data.isFree) formData.append("fee", "0") // force 0 if free
-            else formData.append(key, value.toString())
+          if (key === "hostedBy") {
+            formData.append(key, JSON.stringify(value))
+          } else if (key === "isFree") {
+            formData.append(key, value ? "true" : "false")
+          } else if (key === "isTicketRequired") {
+            formData.append(key, value ? "true" : "false")
+          } else if (key === "fee") {
+            // only send fee for paid events; skip entirely for free events
+            if (!data.isFree && value !== "" && value !== null && value !== undefined) {
+              formData.append(key, value.toString())
+            }
+          } else if (value !== null && value !== undefined && value !== "") {
+            formData.append(key, value.toString())
           }
-          else if (value !== null && value !== undefined) formData.append(key, value.toString())
         });
       if (thumbnailFile) formData.append("thumbnail", thumbnailFile);
       return api.put(`/events/${eventId}`, formData, { headers: { "Content-Type": "multipart/form-data" } });
@@ -164,7 +190,10 @@ export default function EditEvent() {
             </div>
 
             {/* Title */}
-            <input name="title" value={eventFormData.title} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Title *" required/>
+            <div>
+              <label htmlFor="title" className="block text-sm text-gray-400 mb-1">Title *</label>
+              <input name="title" value={eventFormData.title} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Title *" required/>
+            </div>
 
             {/* Description */}
             <div>
@@ -184,39 +213,82 @@ export default function EditEvent() {
               <input type="datetime-local" name="eventEndTime" value={eventFormData.eventEndTime} onChange={handleChange} className="block p-2 mt-1 rounded bg-zinc-800"/>
             </label>
 
-            {/* Location & Capacity */}
-            <input name="location" value={eventFormData.location} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Location *" required/>
-            <input name="seatCapacity" value={eventFormData.seatCapacity} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Seat Capacity *" min={1} required/>
-            <input name="eventType" value={eventFormData.eventType} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Event Type *" required/>
-            <input name="presentedBy" value={eventFormData.presentedBy} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Presented By"/>
+            {/* Location */}
+            <div>
+              <label htmlFor="location" className="block text-sm text-gray-400 mb-1">Location *</label>
+              <input name="location" value={eventFormData.location} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Location *" required/>
+            </div>
+
+            {/* Seat Capacity */}
+            <div>
+              <label htmlFor="seatCapacity" className="block text-sm text-gray-400 mb-1">Seat Capacity *</label>
+              <input name="seatCapacity" type="number" value={eventFormData.seatCapacity} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Seat Capacity *" min={1} required/>
+            </div>
+
+            {/* Event Type */}
+            <div>
+              <label htmlFor="eventType" className="block text-sm text-gray-400 mb-1">Event Type (Virtual/In-Person) *</label>
+              <input name="eventType" value={eventFormData.eventType} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Event Type *" required/>
+            </div>
+
+            {/* Presented By */}
+            <div>
+              <label htmlFor="presentedBy" className="block text-sm text-gray-400 mb-1">Presented By</label>
+              <input name="presentedBy" value={eventFormData.presentedBy} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" placeholder="Presented By"/>
+            </div>
 
             {/* Hosted By */}
-            {eventFormData.hostedBy.map((host, idx) => (
-              <input key={idx} value={host.name} onChange={(e) => handleChange(e, idx)} className="w-full p-2 rounded bg-zinc-800 mb-2" placeholder={`Host ${idx + 1}`}/>
-            ))}
-            <button type="button" onClick={addHost} className="text-sm text-space-accent underline">+ Add another host</button>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Hosted By</label>
+              {eventFormData.hostedBy.map((host, idx) => (
+                <input key={idx} name="hostedBy" value={host.name} onChange={(e) => handleChange(e, idx)} className="w-full p-2 rounded bg-zinc-800 mb-2" placeholder={`Host ${idx + 1}`}/>
+              ))}
+              <button type="button" onClick={addHost} className="text-sm text-space-accent underline">+ Add another host</button>
+            </div>
 
             {/* Dropdowns */}
-            <select name="type" value={eventFormData.type} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" required>
-              <option value="">-- Select Category --</option>
-              <option value="community">Community</option>
-              <option value="astronomical">Astronomical</option>
-            </select>
+            <div>
+              <label htmlFor="type" className="block text-sm text-gray-400 mb-1">Event Category *</label>
+              <select name="type" value={eventFormData.type} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" required>
+                <option value="">-- Select Category --</option>
+                <option value="community">Community</option>
+                <option value="astronomical">Astronomical</option>
+              </select>
+            </div>
 
-            <select name="status" value={eventFormData.status} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" required>
-              <option value="">-- Event Status --</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="completed">Completed</option>
-            </select>
+            <div>
+              <label htmlFor="status" className="block text-sm text-gray-400 mb-1">Event Status *</label>
+              <select name="status" value={eventFormData.status} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800" required>
+                <option value="">-- Event Status --</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
 
-            <select name="isFree" value={eventFormData.isFree ? "true" : "false"} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800">
-              <option value="true">Free</option>
-              <option value="false">Paid</option>
-            </select>
+            <div>
+              <label htmlFor="isFree" className="block text-sm text-gray-400 mb-1">Free / Paid</label>
+              <select name="isFree" value={eventFormData.isFree ? "true" : "false"} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800">
+                <option value="true">Free</option>
+                <option value="false">Paid</option>
+              </select>
+            </div>
 
             {!eventFormData.isFree && (
-              <input name="fee" type="number" value={eventFormData.fee} onChange={handleChange} min={1} placeholder="Fee Amount (₹)" className="w-full p-2 rounded bg-zinc-800" required/>
+              <div>
+                <label htmlFor="fee" className="block text-sm text-gray-400 mb-1">Fee Amount (₹) *</label>
+                <input name="fee" type="number" value={eventFormData.fee} onChange={handleChange} min={1} placeholder="Fee Amount (₹)" className="w-full p-2 rounded bg-zinc-800" required/>
+              </div>
             )}
+
+            {/* Ticket Required Toggle */}
+            <div>
+              <label htmlFor="isTicketRequired" className="block text-sm text-gray-400 mb-1">Require Entry Ticket</label>
+              <select name="isTicketRequired" value={eventFormData.isTicketRequired ? "true" : "false"} onChange={handleChange} className="w-full p-2 rounded bg-zinc-800">
+                <option value="true">Yes – Generate ticket with QR code</option>
+                <option value="false">No – No ticket needed</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">If disabled, registrants won't receive a QR code.</p>
+            </div>
 
             {/* Buttons */}
             <div className="flex gap-2 mt-2">

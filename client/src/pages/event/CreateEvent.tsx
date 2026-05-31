@@ -89,6 +89,10 @@ const CreateEvent = () => {
       Object.entries(formData).forEach(([key, value]) => {
         if (key === "hostedBy") {
           data.append(key, JSON.stringify(value));
+        } else if (key === "eventDate" || key === "eventEndTime") {
+          if (value) {
+            data.append(key, new Date(value).toISOString());
+          }
         } else if (typeof value === "number") {
           data.append(key, value.toString());
         } else if (typeof value === "boolean") {

@@ -39,6 +39,14 @@ const AdminWebinars = () => {
     return regex.test(url)
   }
 
+  const toLocalDatetimeString = (isoString) => {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const fetchWebinars = async () => {
     try {
       const res = await api.get("/webinars")
@@ -66,6 +74,8 @@ const AdminWebinars = () => {
           newWebinarFormData.guests.forEach((guest) =>
             formData.append("guests", guest)
           )
+        } else if (key === "webinarDate" && newWebinarFormData[key]) {
+          formData.append(key, new Date(newWebinarFormData[key]).toISOString())
         } else {
           formData.append(key, newWebinarFormData[key])
         }
@@ -104,7 +114,7 @@ const AdminWebinars = () => {
       title: webinar.title || "",
       presenter: webinar.presenter || "",
       description: webinar.description || "",
-      webinarDate: webinar.webinarDate || "",
+      webinarDate: toLocalDatetimeString(webinar.webinarDate),
       status: webinar.status || "upcoming",
       videoLink: webinar.videoLink || "",
       guests: webinar.guests?.length ? webinar.guests : [""],
@@ -126,6 +136,8 @@ const AdminWebinars = () => {
           if (editWebinarFormData.thumbnail) {
             formData.append("thumbnail", editWebinarFormData.thumbnail)
           }
+        } else if (key === "webinarDate" && editWebinarFormData[key]) {
+          formData.append(key, new Date(editWebinarFormData[key]).toISOString())
         } else if (
           editWebinarFormData[key] !== undefined &&
           editWebinarFormData[key] !== null

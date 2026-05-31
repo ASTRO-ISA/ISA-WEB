@@ -68,17 +68,17 @@ const Events = () => {
   };
 
   // Paid Registration → Payment
-const handlePaidRegister = async (userId, event) => {
-  if (!isLoggedIn)
-    return toast({
-      title: "Hold on!",
-      description: "Please login first to register for the event.",
-      variant: "destructive",
-    });
-  
+  const handlePaidRegister = async (userId, event) => {
+    if (!isLoggedIn)
+      return toast({
+        title: "Hold on!",
+        description: "Please login first to register for the event.",
+        variant: "destructive",
+      });
+
     setSelectedEvent(event); // open modal/popup
     setAgreeToTerms(false);
-};
+  };
 
   // registering a user for event
   const handleRegister = async (userId, eventId) => {
@@ -182,7 +182,7 @@ const handlePaidRegister = async (userId, event) => {
           </p>
         </div>
 
-                {/* Host Your Own Event */}
+        {/* Host Your Own Event */}
         <section className="cosmic-card p-8 mb-16">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="md:w-2/3">
@@ -259,11 +259,10 @@ const handlePaidRegister = async (userId, event) => {
                     <div className="p-5 flex-1 flex flex-col justify-between">
                       <div>
                         <span
-                          className={`${
-                            new Date(event.eventDate) > new Date()
-                              ? "text-space-accent"
-                              : "text-space-purple"
-                          } uppercase text-xs font-bold tracking-widest mb-2`}
+                          className={`${new Date(event.eventDate) > new Date()
+                            ? "text-space-accent"
+                            : "text-space-purple"
+                            } uppercase text-xs font-bold tracking-widest mb-2`}
                         >
                           {new Date(event.eventDate) > new Date()
                             ? "Upcoming"
@@ -277,22 +276,22 @@ const handlePaidRegister = async (userId, event) => {
                         <div className="space-y-2 mb-4">
                           <div className="flex items-center text-sm text-gray-400">
                             <Calendar className="h-4 w-4 mr-2 text-space-accent" />
-                            <span><FormatDate date={event.eventDate}/></span>
+                            <span><FormatDate date={event.eventDate} /></span>
                           </div>
                           <div className="flex items-center text-sm text-gray-400">
                             <Clock className="h-4 w-4 mr-2 text-space-accent" />
-                            <span><FormatTime date={event.eventDate}/></span>
+                            <span><FormatTime date={event.eventDate} /></span>
                           </div>
                           <div className="flex items-center text-sm text-gray-400">
                             <MapPin className="h-4 w-4 mr-2 text-space-accent" />
                             <span>{event.location}</span>
                           </div>
-                          <div className="flex items-center text-sm text-gray-400">
+                          {/* <div className="flex items-center text-sm text-gray-400">
                             <Users className="h-4 w-4 mr-2 text-space-accent" />
                             <span>
                               {event.attendeeCount ?? 0} attending
                             </span>
-                          </div>
+                          </div> */}
                         </div>
 
                         <p className="text-gray-400 text-sm">
@@ -317,10 +316,10 @@ const handlePaidRegister = async (userId, event) => {
                           onClick={() =>
                             navigator.share
                               ? navigator.share({
-                                  title: event.title,
-                                  text: "Check out this event!",
-                                  url: `${window.location.origin}/events/${event.slug}`,
-                                })
+                                title: event.title,
+                                text: "Check out this event!",
+                                url: `${window.location.origin}/events/${event.slug}`,
+                              })
                               : alert("Sharing not supported on this browser.")
                           }
                           className="flex items-center gap-2 cursor-pointer"
@@ -341,15 +340,15 @@ const handlePaidRegister = async (userId, event) => {
                     </DropdownMenu>
                   </div>
 
-                <RegisterButton
-                  event={event}
-                  userInfo={userInfo}
-                  loadingEventId={loadingEventId}
-                  handleRegister={handleRegister}
-                  handleUnregister={handleUnregister}
-                  handlePaidRegister={handlePaidRegister}
-                  toast={toast}
-                />
+                  <RegisterButton
+                    event={event}
+                    userInfo={userInfo}
+                    loadingEventId={loadingEventId}
+                    handleRegister={handleRegister}
+                    handleUnregister={handleUnregister}
+                    handlePaidRegister={handlePaidRegister}
+                    toast={toast}
+                  />
                 </div>
               ))
             )}
@@ -371,28 +370,28 @@ const handlePaidRegister = async (userId, event) => {
 
         {/* Astronomical Calendar */}
         <section>
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-            Astronomical Calendar
-          </h2>
-          <p className="text-xl hidden md:block text-gray-400 max-w-3xl mx-auto">
-            Discover upcoming celestial events; from meteor showers to eclipses — and never miss a night worth watching.
-          </p>
-        </div>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+              Astronomical Calendar
+            </h2>
+            <p className="text-xl hidden md:block text-gray-400 max-w-3xl mx-auto">
+              Discover upcoming celestial events; from meteor showers to eclipses — and never miss a night worth watching.
+            </p>
+          </div>
           <AstronomyCalendar />
         </section>
 
         {/* Upcoming Launches */}
-        <UpcomingLaunches launches={launches}/>
+        <UpcomingLaunches launches={launches} />
       </main>
-              {/* Payment Confirmation Modal - show a popup for terms and conditions*/}
-              {selectedEvent && (
-          <PaymentModal
-            event={selectedEvent}
-            userId={userInfo?.user?._id}
-            onClose={() => setSelectedEvent(null)}
-          />
-        )}
+      {/* Payment Confirmation Modal - show a popup for terms and conditions*/}
+      {selectedEvent && (
+        <PaymentModal
+          event={selectedEvent}
+          userId={userInfo?.user?._id}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
 };

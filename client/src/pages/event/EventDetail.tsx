@@ -383,7 +383,7 @@ const EventDetails = () => {
     }
   };
 
-const downloadRegisteredUsers = async () => {
+  const downloadRegisteredUsers = async () => {
     try {
       const res = await api.get(`/events/${slug}/download-attendees`, {
         responseType: 'blob',
@@ -392,14 +392,14 @@ const downloadRegisteredUsers = async () => {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
-      
+
       link.setAttribute('download', `${event.slug}-registered-users.csv`);
       document.body.appendChild(link);
       link.click();
-      
+
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       toast({ description: "Download started successfully" });
     } catch (err: any) {
       if (err.response?.status === 400) {
@@ -461,10 +461,10 @@ const downloadRegisteredUsers = async () => {
                 <MapPin className="h-5 w-5 mr-2 text-space-accent" />
                 {event.location}
               </div>
-              <div className="flex items-center text-gray-400">
+              {/* <div className="flex items-center text-gray-400">
                 <Users className="h-5 w-5 mr-2 text-space-accent" />
                 {event.attendeeCount ?? 0} attending
-              </div>
+              </div> */}
               <div className="flex items-center text-gray-400">
                 <Video className="h-5 w-5 mr-2 text-space-accent" />
                 {event.eventType}
@@ -506,9 +506,8 @@ const downloadRegisteredUsers = async () => {
                 <button
                   onClick={toggleRegistration}
                   disabled={isSoldOut()}
-                  className={`px-3 py-1 rounded text-white ${
-                    event.isRegistrationOpen ? "bg-red-600" : "bg-green-600"
-                  }`}
+                  className={`px-3 py-1 rounded text-white ${event.isRegistrationOpen ? "bg-red-600" : "bg-green-600"
+                    }`}
                 >
                   {event.isRegistrationOpen
                     ? "Disable Registration"

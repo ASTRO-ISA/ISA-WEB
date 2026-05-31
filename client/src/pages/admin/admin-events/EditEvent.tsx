@@ -140,6 +140,10 @@ export default function EditEvent() {
         Object.entries(data).forEach(([key, value]) => {
           if (key === "hostedBy") {
             formData.append(key, JSON.stringify(value))
+          } else if (key === "eventDate" || key === "eventEndTime") {
+            if (value) {
+              formData.append(key, new Date(value).toISOString());
+            }
           } else if (key === "isFree") {
             formData.append(key, value ? "true" : "false")
           } else if (key === "isTicketRequired") {

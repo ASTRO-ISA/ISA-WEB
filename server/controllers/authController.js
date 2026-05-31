@@ -3,14 +3,20 @@ const jwt = require('jsonwebtoken')
 const { sendEmail } = require('../utils/sendEmail')
 const generateAndSendToken = require('../utils/generateAndSendToken')
 const otpService = require('../services/otpService')
+const resetPasswordTemplate = require('../utils/emailTemplates/resetPasswordTemplate')
 
 exports.signup = async (req, res) => {
   try {
-    const { name, email, phoneNo, password, confirmPassword } = req.body
-    
+    let { name, email, phoneNo, password, confirmPassword } = req.body
+
+    if (!email) {
+      return res.status(400).json({ status: 'Fail', message: 'Email is required' })
+    }
+    email = email.trim().toLowerCase()
+
     // check if email already registered
     const existingUser = await User.findOne({ email })
-    if(existingUser) return res.status(409).json({ message: 'A user with this email or username already exists.' })
+    if (existingUser) return res.status(409).json({ message: 'A user with this email or username already exists.' })
 
     const user = await User.create({
       name,
@@ -33,7 +39,7 @@ exports.signup = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body
+    let { email, password } = req.body
 
     //check both email and password are there
     if (!email || !password) {
@@ -42,6 +48,9 @@ exports.login = async (req, res) => {
         message: 'Please provide both email and Password'
       })
     }
+
+    email = email.trim().toLowerCase()
+
     const user = await User.findOne({ email }).select('+password')
 
     //   if user present then compare password
@@ -108,41 +117,35 @@ exports.updatePassword = async (req, res) => {
 }
 
 exports.forgotPassword = async (req, res) => {
-  const { email } = req.body
+  try {
+    let { email } = req.body
 
-  const user = await User.findOne({ email })
-  if (!user)
-    return res.status(404).json({ message: 'User not found with this email' })
-  if(user.role === 'admin'){
-    return res.status(403).json({ status: 'fail', message: 'Administrators are not permitted to reset passwords via this route.'})
+    if (!email) {
+      return res.status(400).json({ status: 'fail', message: 'Email is required' })
+    }
+    email = String(email).trim().toLowerCase()
+
+    const user = await User.findOne({ email })
+    if (!user)
+      return res.status(404).json({ message: 'User not found with this email' })
+    if (user.role === 'admin') {
+      return res.status(403).json({ status: 'fail', message: 'Administrators are not permitted to reset passwords via this route.' })
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '15m'
+    })
+
+    const resetLink = `${process.env.ORIGIN_FRONTEND}/reset-password/${token}`
+
+    const html = resetPasswordTemplate({ userName: user.name, resetLink })
+
+    await sendEmail(user.email, 'Reset your password', html)
+
+    res.status(200).json({ message: 'Reset link sent to email' })
+  } catch (error) {
+    res.status(500).json({ status: 'fail', message: error.message })
   }
-
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: '15m'
-  })
-
-  const resetLink = `${process.env.ORIGIN_FRONTEND}/reset-password/${token}`
-
-  const html = `
-  <p>Hello ${user.name || 'User'},</p>
-
-  <p>We received a request to reset your password for your ISA account.</p>
-
-  <p>You can reset your password by clicking the link below:</p>
-  <p>
-    <a href="${resetLink}" target="_blank">Reset your password</a>
-  </p>
-
-  <p>If you did not request a password reset, please ignore this email.  
-  Your account will remain secure and no changes will be made.</p>
-
-  <p>Best regards,<br>
-  Team ISA</p>
-`
-
-  await sendEmail(user.email, 'Reset your password', html)
-
-  res.status(200).json({ message: 'Reset link sent to email' })
 }
 
 exports.resetPassword = async (req, res) => {
@@ -152,8 +155,8 @@ exports.resetPassword = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     const user = await User.findById(decoded.id).select('+password')
     if (!user) return res.status(400).json({ message: 'Invalid user' })
-    if(user.role === 'admin'){
-      return res.status(403).json({ status: 'fail', message: 'Administrators are not permitted to reset passwords via this route.'})
+    if (user.role === 'admin') {
+      return res.status(403).json({ status: 'fail', message: 'Administrators are not permitted to reset passwords via this route.' })
     }
 
     user.password = newPassword
@@ -174,7 +177,12 @@ exports.resetPassword = async (req, res) => {
 // otp
 exports.verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body
+    let { email, otp } = req.body
+
+    if (!email) {
+      return res.status(400).json({ status: 'fail', message: 'Email is required' })
+    }
+    email = email.trim().toLowerCase()
 
     const user = await otpService.verifyOtp(email, otp)
 
@@ -186,7 +194,12 @@ exports.verifyOtp = async (req, res) => {
 
 exports.resendOtp = async (req, res) => {
   try {
-    const { email } = req.body
+    let { email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ status: 'fail', message: 'Email is required' })
+    }
+    email = email.trim().toLowerCase()
 
     // if user exists
     const user = await User.findOne({ email })
@@ -244,4 +257,3 @@ exports.scannerLogin = async (req, res) => {
     res.status(500).json({ status: 'fail', message: error.message })
   }
 }
-

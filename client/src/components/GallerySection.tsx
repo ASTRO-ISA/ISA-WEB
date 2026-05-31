@@ -26,7 +26,7 @@ const GallerySection = () => {
       const res = await api.get(`/gallery?page=${page + 1}&limit=4`);
       const { data, total } = res.data;
 
-      if (data.length === 0) {
+      if (!data || data.length === 0) {
         setHasMore(false);
         return;
       }
@@ -49,8 +49,8 @@ const GallerySection = () => {
 
   useEffect(() => {
     api.get('/gallery?page=1&limit=4').then((res) => {
-      const { data, total } = res.data;
-      const images = data.map((img: any) => ({
+      const { data, total } = res.data || {};
+      const images = (data || []).map((img: any) => ({
         _id: img._id,
         src: img.imageUrl,
         caption: img.caption || '',

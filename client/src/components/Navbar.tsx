@@ -124,14 +124,14 @@ const Navbar = () => {
               >
                 <AvatarImage
                   src={
-                    userInfo.user.avatar === "profile-dark.webp"
-                      ? `images/${userInfo.user.avatar}`
-                      : userInfo.user.avatar
+                    userInfo?.user?.avatar === "profile-dark.webp"
+                      ? `images/${userInfo?.user?.avatar}`
+                      : userInfo?.user?.avatar
                   }
                   className="object-cover"
                 />
                 <AvatarFallback>
-                  {userInfo.user.name?.[0] ?? "U"}
+                  {userInfo?.user?.name?.[0] ?? "U"}
                 </AvatarFallback>
               </Avatar>
             )}
@@ -147,8 +147,8 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 space-x-5">
-            {userInfo?.user.role === "admin" ||
-            userInfo?.user.role === "super-admin" ? (
+            {userInfo?.user?.role === "admin" ||
+            userInfo?.user?.role === "super-admin" ? (
               <Link
                 to="/admin"
                 className={`transition-colors ${
@@ -234,16 +234,16 @@ const Navbar = () => {
               >
                 <AvatarImage
                   src={
-                    userInfo.user.avatar === "profile-dark.webp"
-                      ? `images/${userInfo.user.avatar}`
-                      : userInfo.user.avatar
+                    userInfo?.user?.avatar === "profile-dark.webp"
+                      ? `images/${userInfo?.user?.avatar}`
+                      : userInfo?.user?.avatar
                   }
                   alt="User Avatar"
                   className="object-cover"
                 />
                 <AvatarFallback>
-                  {userInfo.user.name
-                    ? userInfo.user.name.charAt(0).toUpperCase()
+                  {userInfo?.user?.name
+                    ? userInfo?.user?.name.charAt(0).toUpperCase()
                     : "U"}
                 </AvatarFallback>
               </Avatar>
@@ -262,8 +262,8 @@ const Navbar = () => {
             className="md:hidden"
           >
             <div className="flex flex-col space-y-4 pt-4 pb-6 px-2">
-              {userInfo?.user.role === "admin" ||
-              userInfo?.user.role === "super-admin" ? (
+              {userInfo?.user?.role === "admin" ||
+              userInfo?.user?.role === "super-admin" ? (
                 <Link
                   to="/admin"
                   className={`transition-colors ${

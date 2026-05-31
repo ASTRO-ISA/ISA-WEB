@@ -12,7 +12,9 @@ const EventsCalendar = () => {
     const res = api
       .get("/launches")
       .then((res) => {
-        setLaunches(res.data);
+        const data = res.data;
+        const launchesArray = Array.isArray(data) ? data : (data?.data || data?.results || []);
+        setLaunches(Array.isArray(launchesArray) ? launchesArray : []);
         setLoading(false);
       })
       .catch((err) => {

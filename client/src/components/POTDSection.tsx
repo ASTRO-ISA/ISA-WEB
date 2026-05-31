@@ -8,6 +8,7 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Share2, Check } from "lucide-react";
 
 const POTDSection = () => {
   const [pictureOfTheDay, setPictureOfTheDay] = useState(null);
@@ -15,7 +16,26 @@ const POTDSection = () => {
   const [loading, setLoading] = useState(false);
   const [openFeaturedPic, setOpenFeaturedPic] = useState(false);
   const [openLightbox, setOpenLightbox] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { isLoggedIn } = useAuth();
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Community Member's Featured Picture — ISA",
+          text: "Check out this amazing space photo featured by the ISA Community!",
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
+  };
 
   const fetchPOTD = async () => {
     try {
@@ -134,9 +154,25 @@ const POTDSection = () => {
               <div className="absolute inset-0" />
             </div>
             <div className="p-4 sm:p-6">
-              <p className="uppercase text-xs font-bold tracking-widest text-space-accent mb-2">
-                Featured Pic
-              </p>
+              <div className="flex justify-between items-center mb-2">
+                <p className="uppercase text-xs font-bold tracking-widest text-space-accent">
+                  Featured Pic
+                </p>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-space-accent text-space-accent hover:bg-space-accent hover:text-white transition-colors"
+                >
+                  {copied ? (
+                    <>
+                      <Check size={14} /> Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Share2 size={14} /> Share
+                    </>
+                  )}
+                </button>
+              </div>
               <h3 className="text-lg sm:text-xl font-bold mb-2">
                 Community Member’s Featured Picture
               </h3>

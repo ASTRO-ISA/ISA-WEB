@@ -1,4 +1,4 @@
-export function webinarEmailTemplate(user, webinar, qrUrl) {
+module.exports = function webinarEmailTemplate(user, webinar, qrUrl) {
     return `
       <div style="font-family: Arial, sans-serif; line-height:1.5;">
         <h3>Webinar Registration Confirmed</h3>
@@ -10,7 +10,7 @@ export function webinarEmailTemplate(user, webinar, qrUrl) {
         <p style="text-align:center;">
           <img src="${qrUrl}" alt="QR Code" style="max-width:200px;"/>
         </p>
-        <p>– ISA</p>
+        <p>– ISA-India</p>
       </div>
     `
 }

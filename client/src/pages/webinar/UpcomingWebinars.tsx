@@ -14,6 +14,7 @@ import Spinner from "@/components/ui/Spinner";
 import PaymentModal from "@/components/popups/PymentModal";
 import FormatDate from "@/components/ui/FormatDate";
 import FormatTime from "@/components/ui/FormatTime";
+import { Link } from "react-router-dom";
 
 const UpcomingWebinars = () => {
   const { userInfo, isLoggedIn, isAdmin } = useAuth();
@@ -21,7 +22,6 @@ const UpcomingWebinars = () => {
 
   const [loadingRegWebId, setLoadingRegWebId] = useState(null);
   const [upcomingWebinars, setUpcomingWebinars] = useState([]);
-  const [playingId, setPlayingId] = useState(null);
   const [featuredId, setFeaturedId] = useState(null);
 
   // Modal state
@@ -145,7 +145,7 @@ const UpcomingWebinars = () => {
 
   return (
     <section className="mb-20 relative">
-      <h2 className="text-2xl font-bold mb-8 text-center sm:text-start">Upcoming Webinars</h2>
+      <h2 className="text-2xl font-bold mb-8 text-center sm:text-start">Upcoming Live</h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {upcomingWebinars.length === 0 ? (
@@ -156,42 +156,20 @@ const UpcomingWebinars = () => {
               key={webinar._id}
               className="cosmic-card overflow-hidden group flex flex-col relative"
             >
-              <div className="relative w-full aspect-video overflow-hidden rounded-lg">
-                {playingId === webinar._id && (webinar.isFree || isRegistered(webinar)) ? (
-                  <iframe
-                    src={`https://www.youtube.com/embed/${webinar.videoId}?autoplay=1`}
-                    title={webinar.title}
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
+              <Link to={`/webinars/${webinar.slug}`} className="flex-1 flex flex-col relative group cursor-pointer">
+                <div className="relative w-full aspect-video overflow-hidden rounded-lg">
+                  <img
+                    src={webinar.thumbnail}
+                    alt={webinar.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                ) : (
-                  <div
-                    className={`w-full h-full cursor-pointer ${
-                      !webinar.isFree && !isRegistered(webinar)
-                        ? "cursor-not-allowed opacity-70"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      if (webinar.isFree || isRegistered(webinar)) {
-                        setPlayingId(webinar._id);
-                      } else {
-                        toast({
-                          title: "Hold On!",
-                          description: "Please register and complete payment to watch this webinar.",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    <img
-                      src={webinar.thumbnail}
-                      alt={webinar.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
+                  {webinar.status === "upcoming" && new Date() >= new Date(webinar.webinarDate) && (
+                    <span className="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1 z-10">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                      Live
+                    </span>
+                  )}
+                </div>
 
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div>
@@ -201,120 +179,135 @@ const UpcomingWebinars = () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-400">
                       <Calendar className="h-4 w-4 mr-2 text-space-accent" />
-                      <span><FormatDate date={webinar.createdAt}/></span>
+                      <span><FormatDate date={webinar.webinarDate}/></span>
                     </div>
                     <div className="flex items-center text-sm text-gray-400">
                       <Clock className="h-4 w-4 mr-2 text-space-accent" />
-                      <span><FormatTime date={webinar.createdAt} /></span>
+                      <span><FormatTime date={webinar.webinarDate} /></span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-400">
-                      <Users className="h-4 w-4 mr-2 text-space-accent" />
-                      <span>{webinar.attendees.length} registered</span>
-                    </div>
+                    {webinar.isRegistrationRequired && (
+                      <div className="flex items-center text-sm text-gray-400">
+                        <Users className="h-4 w-4 mr-2 text-space-accent" />
+                        <span>{webinar.attendees.length} registered</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between mt-auto">
                   <div>
-                    {webinar.guests?.length > 0 && (
+                    {webinar.guests?.filter((g) => g.trim() !== "").length > 0 && (
                       <p className="text-sm text-gray-400">
-                        Guest: {webinar.guests.join(", ").toUpperCase()}
+                        Guest: {webinar.guests.filter((g) => g.trim() !== "").join(", ").toUpperCase()}
                       </p>
                     )}
                     <h4 className="text-sm text-gray-400">
                       Presenter: {(webinar.presenter || "Unknown").toUpperCase()}
                     </h4>
                   </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="p-1 rounded-full hover:bg-gray-800"
-                      >
-                        <MoreVertical className="w-5 h-5 text-gray-400" />
-                      </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent side="left" align="end" className="w-40">
-                      <DropdownMenuItem
-                        className="flex items-center gap-2 cursor-pointer"
-                        onClick={() =>
-                          navigator.share
-                            ? navigator.share({
-                                title: webinar.title,
-                                text: "Check out this webinar!",
-                                url: `${window.location.origin}/webinars?watch=${webinar._id}`,
-                              })
-                            : alert("Sharing not supported on this browser.")
-                        }
-                      >
-                        Share
-                      </DropdownMenuItem>
-
-                      {isAdmin && featuredId !== webinar._id && (
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSetFeatured(webinar);
-                          }}
-                        >
-                          Set as Featured
-                        </DropdownMenuItem>
-                      )}
-
-                      {isAdmin && featuredId === webinar._id && (
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFeatured(webinar);
-                          }}
-                          className="text-red-600"
-                        >
-                          Remove Featured
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
+              </div>
+              </Link>
+              
+              <div className="absolute top-3 right-3 z-20">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="text-white bg-black/40 hover:bg-black/60 rounded-full p-1 h-8 w-8">
+                      <MoreVertical size={18} />
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent side="left" align="end" className="w-40 bg-black border border-gray-800 text-white text-sm shadow-xl">
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 cursor-pointer"
+                      onClick={() =>
+                        navigator.share
+                          ? navigator.share({
+                              title: webinar.title,
+                              text: "Check out this webinar!",
+                              url: `${window.location.origin}/webinars/${webinar.slug}`,
+                            })
+                          : alert("Sharing not supported on this browser.")
+                      }
+                    >
+                      Share
+                    </DropdownMenuItem>
+
+                    {isAdmin && featuredId !== webinar._id && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSetFeatured(webinar);
+                        }}
+                      >
+                        Set as Featured
+                      </DropdownMenuItem>
+                    )}
+
+                    {isAdmin && featuredId === webinar._id && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveFeatured(webinar);
+                        }}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        Remove Featured
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Register Button */}
-              <button
-                onClick={() =>
-                  isRegistered(webinar)
-                    ? !webinar.isFree && isRegistered(webinar)
-                      ? null
-                      : handleUnregister(userInfo?.user._id, webinar._id)
-                    : webinar.isFree
-                    ? handleRegister(userInfo?.user._id, webinar)
-                    : setSelectedWebinar({ ...webinar, item_type: "webinar" })
-                }
-                disabled={!webinar.isFree && isRegistered(webinar)}
-                className={`w-full md:w-auto px-6 py-3 rounded-md transition text-white font-semibold flex justify-center
-                  ${
-                    isLoggedIn && isRegistered(webinar)
-                      ? webinar.isFree
-                        ? "bg-space-purple/30 hover:bg-space-purple/50"
-                        : "bg-gray-500 cursor-not-allowed"
-                      : "bg-space-accent hover:bg-space-accent/80"
-                  }`}
-              >
-                {loadingRegWebId === webinar._id ? (
-                  <Spinner />
-                ) : isLoggedIn && isRegistered(webinar) ? (
-                  webinar.isFree ? (
-                    "Unregister"
+              {webinar.isRegistrationRequired ? (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    isRegistered(webinar)
+                      ? !webinar.isFree && isRegistered(webinar)
+                        ? null
+                        : handleUnregister(userInfo?.user._id, webinar._id)
+                      : webinar.isFree
+                      ? handleRegister(userInfo?.user._id, webinar)
+                      : setSelectedWebinar({ ...webinar, item_type: "webinar" })
+                  }}
+                  disabled={!webinar.isFree && isRegistered(webinar)}
+                  className={`w-full md:w-auto px-6 py-3 rounded-md transition text-white font-semibold flex justify-center z-10 relative
+                    ${
+                      isLoggedIn && isRegistered(webinar)
+                        ? webinar.isFree
+                          ? "bg-space-purple/30 hover:bg-space-purple/50"
+                          : "bg-gray-500 cursor-not-allowed"
+                        : "bg-space-accent hover:bg-space-accent/80"
+                    }`}
+                >
+                  {loadingRegWebId === webinar._id ? (
+                    <Spinner />
+                  ) : isLoggedIn && isRegistered(webinar) ? (
+                    webinar.isFree ? (
+                      "Unregister"
+                    ) : (
+                      "Already Registered (Paid)"
+                    )
+                  ) : webinar.isFree ? (
+                    "Register for this Webinar"
                   ) : (
-                    "Already Registered (Paid)"
-                  )
-                ) : webinar.isFree ? (
-                  "Register for this Webinar"
-                ) : (
-                  `Register - ₹${webinar.fee}`
-                )}
-              </button>
+                    `Register - ₹${webinar.fee}`
+                  )}
+                </button>
+              ) : (
+                <Link
+                  to={`/webinars/${webinar.slug}`}
+                  className="w-full md:w-auto px-6 py-3 rounded-md transition text-white font-semibold flex justify-center bg-space-purple/30 hover:bg-space-purple/50 text-center z-10 relative"
+                >
+                  {webinar.status === "upcoming" && new Date() >= new Date(webinar.webinarDate)
+                    ? "Watch Live"
+                    : webinar.status === "upcoming"
+                    ? "Upcoming"
+                    : "Watch"}
+                </Link>
+              )}
             </div>
           ))
         )}

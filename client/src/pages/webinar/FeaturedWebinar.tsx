@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 const FeaturedWebinars = () => {
   // featured webinar
   const [featured, setFeatured] = useState({
     _id: "",
+    slug: "",
     thumbnail: "",
     title: "",
     description: "",
@@ -53,6 +55,7 @@ const FeaturedWebinars = () => {
       const res = await api.get("/webinars/featured");
         setFeatured({
           _id: res.data._id,
+          slug: res.data.slug || "",
           thumbnail: res.data.thumbnail,
           title: res.data.title,
           description: res.data.description,
@@ -76,6 +79,7 @@ const FeaturedWebinars = () => {
       api.patch(`/webinars/featured/remove/${webinar._id}`);
       setFeatured({
         _id: "",
+        slug: "",
         thumbnail: "",
         title: "",
         description: "",
@@ -113,55 +117,58 @@ const FeaturedWebinars = () => {
   <h2 className="text-2xl font-bold mb-8 text-center sm:text-start">Featured Talk</h2>
 
   {featured && (featured.videoId || featured.thumbnail) ? (
-    <div className="cosmic-card p-0 overflow-hidden rounded-lg">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-        <div className="relative w-full aspect-video rounded-lg overflow-hidden">
-          {featured.thumbnail && (
-            <img
-              src={featured.thumbnail}
-              alt={featured.title}
-              className="w-full h-full object-cover"
-            />
-          )}
-        </div>
+    <div className="cosmic-card p-0 overflow-hidden rounded-lg group relative">
+      <Link to={featured.slug ? `/webinars/${featured.slug}` : "#"} className="block">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+            {featured.thumbnail && (
+              <img
+                src={featured.thumbnail}
+                alt={featured.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            )}
+          </div>
 
-        <div className="md:col-span-2 p-4 md:p-6">
-          <p className="text-sm text-space-accent mb-1">
-            {formatDate(featured.webinarDate)}
-          </p>
-
-          <h3 className="text-2xl font-bold mb-2">{featured.title}</h3>
-
-          <p className="text-gray-400 mb-4 line-clamp-3">
-            {featured.description}
-          </p>
-
-          <p className="text-sm text-gray-400 mb-2">
-            <span className="text-gray-400">Presenter: </span>
-            {(featured.presenter || 'Unknown').toUpperCase()}
-          </p>
-
-          {featured.guest && featured.guest.length > 0 && (
-            <p className="text-sm text-gray-400 mb-2">
-              <span className="text-gray-400">Guests: </span>
-              {featured.guest.join(', ').toUpperCase()}
+          <div className="md:col-span-2 p-4 md:p-6">
+            <p className="text-sm text-space-accent mb-1">
+              {formatDate(featured.webinarDate)}
             </p>
-          )}
 
-          {isAdmin && isLoggedIn && (
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                handleRemoveFeatured(featured)
-              }}
-              className="p-1 border border-red-600 hover:text-red-800 hover:border-red-800 rounded text-red-600 flex items-center gap-2"
-            >
-              Remove Featured
-            </button>
-          )}
+            <h3 className="text-2xl font-bold mb-2">{featured.title}</h3>
+
+            <p className="text-gray-400 mb-4 line-clamp-3">
+              {featured.description}
+            </p>
+
+            <p className="text-sm text-gray-400 mb-2">
+              <span className="text-gray-400">Presenter: </span>
+              {(featured.presenter || 'Unknown').toUpperCase()}
+            </p>
+
+            {featured.guest && featured.guest.filter((g) => g.trim() !== "").length > 0 && (
+              <p className="text-sm text-gray-400 mb-2">
+                <span className="text-gray-400">Guests: </span>
+                {featured.guest.filter((g) => g.trim() !== "").join(', ').toUpperCase()}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </Link>
+      {isAdmin && isLoggedIn && (
+        <div className="absolute bottom-4 right-4 z-10">
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleRemoveFeatured(featured)
+            }}
+            className="p-1 border border-red-600 hover:text-red-800 hover:border-red-800 rounded text-red-600 flex items-center gap-2 bg-black/50"
+          >
+            Remove Featured
+          </button>
+        </div>
+      )}
     </div>
   ) : (
     <p className="text-gray-500 italic text-center sm:text-start">

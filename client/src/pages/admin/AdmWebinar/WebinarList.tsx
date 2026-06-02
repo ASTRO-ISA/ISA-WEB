@@ -36,11 +36,12 @@ const WebinarList = ({
                   <p>Presenter: {webinar.presenter}</p>
                   <p>
                     Date:{" "}
-                    {new Date(webinar.webinarDate).toLocaleDateString()} at{" "}
+                    {new Date(webinar.webinarDate).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })} at{" "}
                     {new Date(webinar.webinarDate).toLocaleTimeString("en-US", {
+                      timeZone: "Asia/Kolkata",
                       hour: "numeric",
                       minute: "2-digit",
-                    })}
+                    })} (IST)
                   </p>
                   <p>{webinar.description}</p>
                   {webinar.isFree ? (

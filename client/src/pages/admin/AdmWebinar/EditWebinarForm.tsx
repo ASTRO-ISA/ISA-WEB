@@ -23,6 +23,11 @@ const EditWebinarForm = ({
         isFree,
         fee: isFree ? "" : editWebinarFormData.fee,
       })
+    } else if (name === "isRegistrationRequired") {
+      setEditWebinarFormData({
+        ...editWebinarFormData,
+        isRegistrationRequired: value === "true",
+      })
     } else if (type === "number") {
       setEditWebinarFormData({ ...editWebinarFormData, [name]: Number(value) })
     } else {
@@ -112,6 +117,18 @@ const EditWebinarForm = ({
         <option value="false">Paid</option>
       </select>
 
+      <label className="text-sm text-gray-400">Registration Required? *</label>
+      <select
+        name="isRegistrationRequired"
+        value={editWebinarFormData.isRegistrationRequired ? "true" : "false"}
+        onChange={handleEditChange}
+        className="w-full p-2 mb-3 rounded bg-gray-800 text-white"
+        required
+      >
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+
       {!editWebinarFormData.isFree && (
         <div>
           <label className="text-sm text-gray-400">Fee Amount *</label>
@@ -137,7 +154,6 @@ const EditWebinarForm = ({
             className="w-full p-2 rounded bg-gray-800 text-white"
             placeholder={`Guest ${index + 1}`}
           />
-          {index > 0 && (
             <Button
               type="button"
               variant="ghost"
@@ -146,7 +162,6 @@ const EditWebinarForm = ({
             >
               <X className="w-4 h-4" />
             </Button>
-          )}
         </div>
       ))}
       <Button type="button" variant="outline" size="sm" onClick={addEditGuestField}>

@@ -75,6 +75,10 @@ const webinarSchema = new mongoose.Schema({
           },
           message: 'Paid webinar must have a valid fee greater than 0'
         }
+    },
+    isRegistrationRequired: {
+        type: Boolean,
+        default: false
     }
 })
 

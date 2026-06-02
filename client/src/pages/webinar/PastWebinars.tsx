@@ -10,10 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Link } from "react-router-dom";
 
 const PastWebinars = () => {
   const [pastWebinars, setPastWebinars] = useState([]);
-  const [playingId, setPlayingId] = useState(null);
   const [featuredId, setFeaturedId] = useState(null);
 
   const { isAdmin } = useAuth();
@@ -28,7 +28,7 @@ const PastWebinars = () => {
     });
 
   const handleShare = (webinar) => {
-    const webinarUrl = `${window.location.origin}/webinars?watch=${webinar._id}`;
+    const webinarUrl = `${window.location.origin}/webinars/${webinar.slug}`;
     if (navigator.share) {
       navigator.share({
         title: webinar.title,
@@ -116,87 +116,72 @@ const PastWebinars = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {pastWebinars.map((webinar) => (
-            <div key={webinar._id} className="cosmic-card overflow-hidden group">
-              {/* Video or Thumbnail */}
-              <div className="relative w-full aspect-video overflow-hidden rounded-lg">
-                {playingId === webinar._id ? (
-                  <iframe
-                    src={`https://www.youtube.com/embed/${webinar.videoId}?autoplay=1&modestbranding=1&rel=0&showinfo=0&controls=1`}
-                    title={webinar.title}
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
+            <div key={webinar._id} className="cosmic-card overflow-hidden group relative">
+              <Link to={`/webinars/${webinar.slug}`} className="block">
+                {/* Video or Thumbnail */}
+                <div className="relative w-full aspect-video overflow-hidden rounded-lg">
+                  <img
+                    src={webinar.thumbnail}
+                    alt={webinar.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                ) : (
-                  <div
-                    className="w-full h-full cursor-pointer"
-                    onClick={() => setPlayingId(webinar._id)}
-                  >
-                    <img
-                      src={webinar.thumbnail}
-                      alt={webinar.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Details */}
-              <div className="p-4">
-                <p className="text-space-accent text-sm">
-                  {formatDate(webinar.webinarDate)}
-                </p>
-                <h3 className="text-xl font-semibold mb-1 text-white line-clamp-2 min-h-[3rem]">
-                  {webinar.title}
-                </h3>
-                <p className="text-gray-400 text-sm mb-4 min-h-[3rem]">
-                  {webinar.description}
-                </p>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    {webinar.guests?.length > 0 && (
-                      <p className="text-sm text-gray-400">
-                        Guest: {webinar.guests.join(", ").toUpperCase()}
-                      </p>
-                    )}
-                    <h4 className="text-sm text-gray-400">
-                      Presenter: {(webinar.presenter || "Unknown").toUpperCase()}
-                    </h4>
-                  </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="p-1 rounded-full hover:bg-gray-800"
-                      >
-                        <MoreVertical className="w-5 h-5 text-gray-400" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuItem onClick={() => handleShare(webinar)}>
-                        Share
-                      </DropdownMenuItem>
-
-                      {isAdmin && featuredId !== webinar._id && (
-                        <DropdownMenuItem onClick={() => handleSetFeatured(webinar)}>
-                          Set as Featured
-                        </DropdownMenuItem>
-                      )}
-
-                      {isAdmin && featuredId === webinar._id && (
-                        <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600"
-                          onClick={() => handleRemoveFeatured(webinar)}
-                        >
-                          Remove Featured
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
+
+                {/* Details */}
+                <div className="p-4">
+                  <p className="text-space-accent text-sm">
+                    {formatDate(webinar.webinarDate)}
+                  </p>
+                  <h3 className="text-xl font-semibold mb-1 text-white line-clamp-2 min-h-[3rem]">
+                    {webinar.title}
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-4 min-h-[3rem]">
+                    {webinar.description}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {webinar.guests?.filter((g) => g.trim() !== "").length > 0 && (
+                        <p className="text-sm text-gray-400">
+                          Guest: {webinar.guests.filter((g) => g.trim() !== "").join(", ").toUpperCase()}
+                        </p>
+                      )}
+                      <h4 className="text-sm text-gray-400">
+                        Presenter: {(webinar.presenter || "Unknown").toUpperCase()}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <div className="absolute top-3 right-3 z-20">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="text-white bg-black/40 hover:bg-black/60 rounded-full p-1 h-8 w-8">
+                      <MoreVertical size={18} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 bg-black border border-gray-800 text-white text-sm shadow-xl">
+                    <DropdownMenuItem onClick={() => handleShare(webinar)} className="cursor-pointer">
+                      Share
+                    </DropdownMenuItem>
+
+                    {isAdmin && featuredId !== webinar._id && (
+                      <DropdownMenuItem onClick={() => handleSetFeatured(webinar)} className="cursor-pointer">
+                        Set as Featured
+                      </DropdownMenuItem>
+                    )}
+
+                    {isAdmin && featuredId === webinar._id && (
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-600 cursor-pointer"
+                        onClick={() => handleRemoveFeatured(webinar)}
+                      >
+                        Remove Featured
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ))}

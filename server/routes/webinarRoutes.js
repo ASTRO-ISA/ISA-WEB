@@ -18,6 +18,7 @@ router.route('/past').get(webinarController.pastWebinars)
 router.route('/featured').get(webinarController.getFeatured)
 router.route('/featured/:id').patch(webinarController.setFeatured)
 router.route('/featured/remove/:id').patch(webinarController.removeFeatured)
+router.route('/:slug').get(webinarController.getWebinarBySlug)
 
 // for logged in users
 router.use(authenticateToken)

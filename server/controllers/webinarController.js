@@ -42,6 +42,7 @@ exports.createWebinar = async (req, res) => {
     const thumbnail = req.file ? req.file.path : ""
     const publicId = req.file ? req.file.filename : ""
     const slug = slugify(title, { lower: true, strict: true })
+    const isRegistrationRequired = req.body.isRegistrationRequired === "true" || req.body.isRegistrationRequired === true
 
     const webinarData = {
       thumbnail,
@@ -55,6 +56,7 @@ exports.createWebinar = async (req, res) => {
       videoId,
       isFree,
       fee,
+      isRegistrationRequired,
     }
 
     const webinar = new Webinar(webinarData)
@@ -102,6 +104,18 @@ exports.pastWebinars = async (req, res) => {
     res.status(200).json(webinars || null)
   } catch (err) {
     res.status(500).json({ message: 'Server error fetching past webinars' })
+  }
+}
+
+exports.getWebinarBySlug = async (req, res) => {
+  try {
+    const webinar = await Webinar.findOne({ slug: req.params.slug }).populate('attendees.user', 'name email avatar')
+    if (!webinar) {
+      return res.status(404).json({ message: 'Webinar not found' })
+    }
+    res.status(200).json(webinar)
+  } catch (err) {
+    res.status(500).json({ message: 'Server error fetching webinar', error: err.message })
   }
 }
 

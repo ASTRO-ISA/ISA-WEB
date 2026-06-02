@@ -28,6 +28,7 @@ const AdminWebinars = () => {
     thumbnail: null,
     isFree: true,
     fee: "",
+    isRegistrationRequired: false,
   })
 
   const [editWebinarFormData, setEditWebinarFormData] = useState({
@@ -97,6 +98,7 @@ const AdminWebinars = () => {
         thumbnail: null,
         isFree: true,
         fee: "",
+        isRegistrationRequired: false,
       })
       if (fileInputRef.current) fileInputRef.current.value = null
       fetchWebinars()
@@ -121,6 +123,7 @@ const AdminWebinars = () => {
       thumbnail: null,
       isFree: webinar.isFree ?? true,
       fee: webinar.fee ?? "",
+      isRegistrationRequired: webinar.isRegistrationRequired ?? false,
     })
   }
 

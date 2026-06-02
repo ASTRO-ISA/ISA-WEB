@@ -28,6 +28,11 @@ const CreateWebinarForm = ({
         isFree,
         fee: isFree ? "" : "", // reset when switching
       })
+    } else if (name === "isRegistrationRequired") {
+      setNewWebinarFormData({
+        ...newWebinarFormData,
+        isRegistrationRequired: value === "true",
+      })
     } else if (type === "number") {
       setNewWebinarFormData({ ...newWebinarFormData, [name]: Number(value) })
     } else {
@@ -133,6 +138,18 @@ const CreateWebinarForm = ({
             <option value="false">Paid</option>
           </select>
 
+          <label className="text-sm text-gray-400">Registration Required? *</label>
+          <select
+            name="isRegistrationRequired"
+            value={newWebinarFormData.isRegistrationRequired ? "true" : "false"}
+            onChange={handleNewChange}
+            className="w-full p-2 mb-3 rounded bg-gray-800 text-white"
+            required
+          >
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+
           {!newWebinarFormData.isFree && (
             <div>
               <label className="text-sm text-gray-400">Fee Amount *</label>
@@ -158,16 +175,14 @@ const CreateWebinarForm = ({
                 className="w-full p-2 rounded bg-gray-800 text-white"
                 placeholder={`Guest ${index + 1}`}
               />
-              {index > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeGuestField(index)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeGuestField(index)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
           ))}
           <Button

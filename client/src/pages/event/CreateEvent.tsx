@@ -91,7 +91,7 @@ const CreateEvent = () => {
           data.append(key, JSON.stringify(value));
         } else if (key === "eventDate" || key === "eventEndTime") {
           if (value) {
-            data.append(key, new Date(value).toISOString());
+            data.append(key, new Date(value as string).toISOString());
           }
         } else if (typeof value === "number") {
           data.append(key, value.toString());

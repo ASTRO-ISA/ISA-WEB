@@ -15,6 +15,7 @@ import Shop from "./pages/Shop";
 import Training from "./pages/e-Learning/Training";
 import Events from "./pages/event/Events";
 import Webinars from "./pages/webinar/Webinars";
+import WebinarDetail from "./pages/webinar/WebinarDetail";
 import Login from "./pages/authentication/Login";
 import CreateAccount from "./pages/authentication/CreateAccount";
 import Profile from "./pages/userDashboard/Dashboard";
@@ -109,6 +110,7 @@ const App = () => {
             <Route path="/shop" element={<Shop />} />
             <Route path="/training" element={<Training />} />
             <Route path="/webinars" element={<Webinars />} />
+            <Route path="/webinars/:slug" element={<WebinarDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<CreateAccount />} />
             <Route path="terms-and-conditions" element={<TermsAndConditions />} />

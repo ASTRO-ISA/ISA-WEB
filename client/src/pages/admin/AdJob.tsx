@@ -12,8 +12,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const fetchJobs = async () => {
   const res = await api.get("/jobs/");
-  return res.data.data;
+  // return res.data.data;
+  return res.data?.data || res.data || [];
 };
+
+const fieldInputClass =
+  "w-full p-3 rounded-md border border-gray-700/80 bg-gray-800/80 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-space-purple/40";
+const descriptionTextareaClass = `${fieldInputClass} min-h-[160px] resize-y`;
 
 const AdminJobs = () => {
   const queryClient = useQueryClient();
@@ -146,15 +151,15 @@ const AdminJobs = () => {
   if (isError) return <p className="text-red-500">Error loading jobs...</p>;
 
   return (
-    <>
+    <div className="space-y-6">
       <Helmet>
         <title>Admin: Jobs | ISA-India</title>
         <meta name="description" content="Admin page for managing jobs." />
       </Helmet>
-      {/* New Job Form */}
+
       <Card className="bg-space-purple/10 border-space-purple/30">
-        <CardHeader>
-          <CardTitle>Create New Job</CardTitle>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl">Create New Job</CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -170,7 +175,7 @@ const AdminJobs = () => {
               value={newJobFormData.title}
               onChange={handleNewJobFormChange}
               placeholder="Job Title*"
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              className={fieldInputClass}
               required
             />
             <input
@@ -179,7 +184,7 @@ const AdminJobs = () => {
               value={newJobFormData.role}
               onChange={handleNewJobFormChange}
               placeholder="Job Role"
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              className={fieldInputClass}
               required
             />
             <textarea
@@ -187,28 +192,32 @@ const AdminJobs = () => {
               value={newJobFormData.description}
               onChange={handleNewJobFormChange}
               placeholder="Job Description"
-              className="w-full p-2 rounded bg-gray-800 text-white"
+              className={descriptionTextareaClass}
               required
-            ></textarea>
-            <label htmlFor="applyLink" className="block text-gray-400 text-sm">
-              Apply Link
+            />
+            <label htmlFor="applyLink" className="block space-y-1.5">
+              <span className="text-sm font-medium text-gray-400">Apply Link</span>
               <input
+                id="applyLink"
                 type="url"
                 name="applyLink"
                 value={newJobFormData.applyLink}
                 onChange={handleNewJobFormChange}
-                placeholder="Apply Link"
-                className="w-full p-2 rounded bg-gray-800 text-white"
+                placeholder="https://..."
+                className={fieldInputClass}
                 required
               />
             </label>
-            <label htmlFor="document" className="block text-gray-400 text-sm">
-              The allowed formats are pdf, docx and doc
+            <label htmlFor="document" className="block space-y-1.5">
+              <span className="text-sm font-medium text-gray-400">
+                Attachment (PDF, DOCX, DOC)
+              </span>
               <input
+                id="document"
                 type="file"
                 name="document"
                 onChange={handleNewJobFormChange}
-                className="w-full p-2 rounded bg-gray-800 text-white"
+                className={`${fieldInputClass} file:mr-3 file:rounded file:border-0 file:bg-space-purple/30 file:px-3 file:py-1 file:text-sm file:text-white`}
               />
             </label>
 
@@ -219,107 +228,132 @@ const AdminJobs = () => {
         </CardContent>
       </Card>
 
-      {/* Job List */}
-      <ul className="space-y-4 mt-4">
-        <SpinnerOverlay
-          show={deleteJobMutation.isPending || updateJobMutation.isPending}
-        >
-          {jobs.map((job) => (
-            <li key={job._id} className="p-4 border bg-space-purple/20 rounded">
-              {editingJobId === job._id ? (
-                <div className="space-y-2">
-                  {/* Edit Form Inputs */}
-                  <input
-                    type="text"
-                    name="title"
-                    value={editJobFormData.title}
-                    onChange={handleEditJobFormChange}
-                    className="w-full p-2 rounded bg-gray-800 text-white"
-                  />
-                  <input
-                    type="text"
-                    name="role"
-                    value={editJobFormData.role}
-                    onChange={handleEditJobFormChange}
-                    className="w-full p-2 rounded bg-gray-800 text-white"
-                  />
-                  <textarea
-                    name="description"
-                    value={editJobFormData.description}
-                    onChange={handleEditJobFormChange}
-                    className="w-full p-2 rounded bg-gray-800 text-white"
-                  ></textarea>
-                  <input
-                    type="url"
-                    name="applyLink"
-                    value={editJobFormData.applyLink}
-                    onChange={handleEditJobFormChange}
-                    className="w-full p-2 rounded bg-gray-800 text-white"
-                  />
+      <section>
+        <h2 className="mb-4 text-lg font-semibold text-white">Posted Jobs</h2>
+        <ul className="space-y-4">
+          <SpinnerOverlay
+            show={deleteJobMutation.isPending || updateJobMutation.isPending}
+          >
+            {jobs.map((job) => (
+              <li
+                key={job._id}
+                className="rounded-lg border border-space-purple/30 bg-space-purple/10 p-5 shadow-sm"
+              >
+                {editingJobId === job._id ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      name="title"
+                      value={editJobFormData.title}
+                      onChange={handleEditJobFormChange}
+                      placeholder="Job Title"
+                      className={fieldInputClass}
+                    />
+                    <input
+                      type="text"
+                      name="role"
+                      value={editJobFormData.role}
+                      onChange={handleEditJobFormChange}
+                      placeholder="Job Role"
+                      className={fieldInputClass}
+                    />
+                    <textarea
+                      name="description"
+                      value={editJobFormData.description}
+                      onChange={handleEditJobFormChange}
+                      placeholder="Job Description"
+                      className={descriptionTextareaClass}
+                    />
+                    <input
+                      type="url"
+                      name="applyLink"
+                      value={editJobFormData.applyLink}
+                      onChange={handleEditJobFormChange}
+                      placeholder="Apply Link"
+                      className={fieldInputClass}
+                    />
 
-                  <div className="flex gap-2 mt-2">
-                    <Button
-                      size="sm"
-                      onClick={() => updateJobMutation.mutate()}
-                      variant="default"
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setEditingJobId(null)}
-                      variant="outline"
-                    >
-                      Cancel
-                    </Button>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => updateJobMutation.mutate()}
+                        variant="default"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setEditingJobId(null)}
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <>
-                  {/* Display Job */}
-                  <p className="font-semibold">
-                    <span className="text-gray-400">Title: </span>
-                    {job.title}
-                  </p>
-                  <p>
-                    <span className="text-gray-400">Role: </span>
-                    {job.role}
-                  </p>
-                  <p>
-                    <span className="text-gray-400">Description: </span>
-                    {job.description}
-                  </p>
-                  <p className="text-blue-400 break-words">
-                    <span className="text-gray-400">Apply Link: </span>
-                    {job.applyLink}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleEditJobClick(job)}
-                      variant="outline"
-                    >
-                      <Pencil className="w-4 h-4 mr-1" /> Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (window.confirm("Are you sure you want to delete this job? This action cannot be undone.")) {
-                          deleteJobMutation.mutate(job._id)
-                        }
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" /> Delete
-                    </Button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-1 border-b border-gray-700/50 pb-3">
+                      <h3 className="text-lg font-semibold leading-snug text-white">
+                        {job.title}
+                      </h3>
+                      <p className="text-sm text-gray-400">{job.role}</p>
+                    </div>
+
+                    <div>
+                      <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Description
+                      </span>
+                      <p className="mt-1 block whitespace-pre-line leading-relaxed text-gray-300">
+                        {job.description}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Apply Link
+                      </span>
+                      <a
+                        href={job.applyLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 block break-words text-sm text-blue-400 hover:underline"
+                      >
+                        {job.applyLink}
+                      </a>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 border-t border-gray-700/50 pt-3">
+                      <Button
+                        size="sm"
+                        onClick={() => handleEditJobClick(job)}
+                        variant="outline"
+                      >
+                        <Pencil className="mr-1 h-4 w-4" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Are you sure you want to delete this job? This action cannot be undone.",
+                            )
+                          ) {
+                            deleteJobMutation.mutate(job._id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="mr-1 h-4 w-4" /> Delete
+                      </Button>
+                    </div>
                   </div>
-                </>
-              )}
-            </li>
-          ))}
-        </SpinnerOverlay>
-      </ul>
-    </>
+                )}
+              </li>
+            ))}
+          </SpinnerOverlay>
+        </ul>
+      </section>
+    </div>
   );
 };
 

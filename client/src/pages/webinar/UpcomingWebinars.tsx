@@ -220,15 +220,29 @@ const UpcomingWebinars = () => {
                   <DropdownMenuContent side="left" align="end" className="w-40 bg-black border border-gray-800 text-white text-sm shadow-xl">
                     <DropdownMenuItem
                       className="flex items-center gap-2 cursor-pointer"
-                      onClick={() =>
-                        navigator.share
-                          ? navigator.share({
-                              title: webinar.title,
-                              text: "Check out this webinar!",
-                              url: `${window.location.origin}/webinars/${webinar.slug}`,
-                            })
-                          : alert("Sharing not supported on this browser.")
-                      }
+                      onClick={async () => {
+                        const shareUrl = `${window.location.origin}/webinars/${webinar.slug}`;
+                        const shareTitle = `Webinar: ${webinar.title}`;
+                        const shareText = `Check out this webinar presented by ${(webinar.presenter || "Unknown").toUpperCase()} on ISA-India!`;
+
+                        try {
+                          if (navigator.share) {
+                            await navigator.share({
+                              title: shareTitle,
+                              text: shareText,
+                              url: shareUrl,
+                            });
+                          } else {
+                            await navigator.clipboard.writeText(shareUrl);
+                            toast({ description: "Link copied to clipboard!" });
+                          }
+                        } catch (err) {
+                          if (err?.name !== "AbortError") {
+                            await navigator.clipboard.writeText(shareUrl);
+                            toast({ description: "Link copied to clipboard!" });
+                          }
+                        }
+                      }}
                     >
                       Share
                     </DropdownMenuItem>

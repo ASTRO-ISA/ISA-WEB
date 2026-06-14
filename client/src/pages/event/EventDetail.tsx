@@ -589,18 +589,12 @@ const EventDetails = () => {
             onSuccess={() => fetchEvent()}
             onSwitchToPay={() => setIsResubmission(false)}
           />
-        ) : selectedEvent.upiId ? (
+        ) : (
           <ManualPaymentModal
             event={selectedEvent}
             userId={userInfo?.user?._id}
             onClose={() => { setSelectedEvent(null); setIsResubmission(false); }}
             onSuccess={() => fetchEvent()}
-          />
-        ) : (
-          <PaymentModal
-            event={selectedEvent}
-            userId={userInfo?.user?._id}
-            onClose={() => { setSelectedEvent(null); setIsResubmission(false); }}
           />
         )
       )}

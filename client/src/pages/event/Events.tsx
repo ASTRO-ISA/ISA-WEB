@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import AstronomyCalendar from "./AstronomyCalendar";
-import PaymentModal from "@/components/popups/PymentModal";
+import ManualPaymentModal from "@/components/popups/ManualPaymentModal";
+import ResubmitPaymentModal from "@/components/popups/ResubmitPaymentModal";
 import FormatDate from "@/components/ui/FormatDate";
 import FormatTime from "@/components/ui/FormatTime";
 import RegisterButton from "./RegisterButton";
@@ -37,7 +38,7 @@ const Events = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [isResubmission, setIsResubmission] = useState(false);
 
   const fetchEvents = async () => {
     try {
@@ -76,8 +77,13 @@ const Events = () => {
         variant: "destructive",
       });
 
+    const normalizeUserId = (id) => (id ? String(id) : null)
+    const userReg = event?.registeredUsers?.find((e) => {
+      const registeredUserId = normalizeUserId(e?.user?._id || e?.user)
+      return registeredUserId === normalizeUserId(userInfo?.user?._id)
+    });
+    setIsResubmission(userReg?.status === 'payment_not_found');
     setSelectedEvent(event); // open modal/popup
-    setAgreeToTerms(false);
   };
 
   // registering a user for event
@@ -449,11 +455,22 @@ const Events = () => {
       </main>
       {/* Payment Confirmation Modal - show a popup for terms and conditions*/}
       {selectedEvent && (
-        <PaymentModal
-          event={selectedEvent}
-          userId={userInfo?.user?._id}
-          onClose={() => setSelectedEvent(null)}
-        />
+        isResubmission ? (
+          <ResubmitPaymentModal
+            event={selectedEvent}
+            userId={userInfo?.user?._id}
+            onClose={() => { setSelectedEvent(null); setIsResubmission(false); }}
+            onSuccess={() => fetchEvents()}
+            onSwitchToPay={() => setIsResubmission(false)}
+          />
+        ) : (
+          <ManualPaymentModal
+            event={selectedEvent}
+            userId={userInfo?.user?._id}
+            onClose={() => { setSelectedEvent(null); setIsResubmission(false); }}
+            onSuccess={() => fetchEvents()}
+          />
+        )
       )}
     </div>
   );

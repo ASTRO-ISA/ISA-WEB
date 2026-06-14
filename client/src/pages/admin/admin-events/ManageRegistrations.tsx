@@ -33,7 +33,7 @@ const ManageRegistrations = () => {
       const eventRes = await api.get(`/events/${slug}`);
       setEvent(eventRes.data);
 
-      const regRes = await api.get(`/events/${slug}/registrations`);
+      const regRes = await api.get(`/events/event-registrations/${slug}`);
       setRegistrations(regRes.data);
     } catch (err) {
       console.error(err);
@@ -100,7 +100,7 @@ const ManageRegistrations = () => {
 
   const downloadReport = async (filterStatus?: 'flagged' | 'approved') => {
     try {
-      const res = await api.get(`/events/${slug}/download-attendees`, {
+      const res = await api.get(`/events/download-attendees/${slug}`, {
         responseType: 'blob',
       });
       let data = await res.data.text();
@@ -132,7 +132,7 @@ const ManageRegistrations = () => {
 
   const downloadScannerSheet = async () => {
     try {
-      const res = await api.get(`/events/${slug}/download-scanner-sheet`, {
+      const res = await api.get(`/events/download-scanner-sheet/${slug}`, {
         responseType: 'blob',
       });
       const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

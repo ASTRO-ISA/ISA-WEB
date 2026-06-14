@@ -55,7 +55,15 @@ router
   )
 
 router.route('/register/:eventid/:userid').patch(authenticateToken, eventController.registerEvent)
+router.route('/register/manual/:eventid/:userid').post(authenticateToken, eventController.manualRegisterEvent)
 router.route('/unregister/:eventid/:userid').patch(authenticateToken, eventController.unregisterEvent)
+
+// registration-specific endpoints
+router.route('/registrations/:regId/approve').patch(authenticateToken, auditLog('APPROVE_REGISTRATION', 'Event'), eventController.approveManualRegistration)
+router.route('/registrations/:regId/review').patch(authenticateToken, auditLog('FLAG_REGISTRATION', 'Event'), eventController.reviewManualRegistration)
+router.route('/registrations/:regId/resend-ticket').post(authenticateToken, auditLog('RESEND_TICKET', 'Event'), eventController.resendTicket)
+router.route('/registrations/bulk-approve').patch(authenticateToken, auditLog('BULK_APPROVE_REGISTRATIONS', 'Event'), eventController.bulkApproveManualRegistrations)
+router.route('/registrations/bulk-resend-ticket').post(authenticateToken, auditLog('BULK_RESEND_TICKETS', 'Event'), eventController.bulkResendTickets)
 
 router.delete('/:id',
   authenticateToken,
@@ -79,7 +87,10 @@ router
     eventController.updateEvent
   )
 
+// slug-based endpoints (must come after specific endpoints to avoid shadowing)
+router.route('/:slug/registrations').get(authenticateToken, eventController.getEventRegistrations)
 router.route('/:slug/download-attendees').get(authenticateToken, eventController.downloadEventAttendees)
+router.route('/:slug/download-scanner-sheet').get(authenticateToken, eventController.downloadScannerSheet)
 
 // public catch-all (must be LAST)
 // /:slug matches any single path segment — if it were earlier, it would

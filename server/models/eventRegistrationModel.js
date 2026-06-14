@@ -14,16 +14,45 @@ const eventRegistrationSchema = new mongoose.Schema({
   },
   token: {
     type: String,
-    required: true,
-    unique: true
+    unique: true,
+    sparse: true
   },
-  used: {
-    type: Boolean,
-    default: false
+  scanCount: {
+    type: Number,
+    default: 0
   },
   registeredAt: {
     type: Date,
     default: Date.now
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'payment_not_found', 'rejected'],
+    default: 'pending'
+  },
+  transactionId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
+  paymentTime: {
+    type: Date
+  },
+  approvalTime: {
+    type: Date
+  },
+  isManualPayment: {
+    type: Boolean,
+    default: false
+  },
+  isResubmitted: {
+    type: Boolean,
+    default: false
+  },
+  emailSent: {
+    type: Boolean,
+    default: false
   }
 })
 

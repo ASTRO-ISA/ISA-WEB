@@ -3,7 +3,7 @@ const EventRegistration = require('../models/eventRegistrationModel')
 const User = require('../models/userModel')
 const jwt = require('jsonwebtoken')
 const { sendEmail } = require('../utils/sendEmail')
-const scannerInviteTemplate = require('../utils/emailTemplates/scannerInviteTemplate')
+const scannerInviteEmail = require('../utils/emailTemplates/scannerInviteEmail')
 require('dotenv').config()
 
 exports.verifyQR = async (req, res) => {
@@ -115,7 +115,7 @@ exports.addScanner = async (req, res) => {
       const scannerLink = `${process.env.ORIGIN_FRONTEND}/events/scanner/${event.slug}?scannerToken=${scannerToken}`
 
       // Send invitation email using template
-      const emailContent = scannerInviteTemplate({
+      const emailContent = scannerInviteEmail({
         scannerName: user.name,
         eventTitle: event.title,
         eventDate: new Date(event.eventDate).toDateString(),

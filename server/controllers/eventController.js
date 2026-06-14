@@ -8,9 +8,18 @@ const cloudinary = require('cloudinary').v2
 require('dotenv').config()
 const { v4: uuidv4 } = require('uuid')
 const QRCode = require('qrcode')
+const xlsx = require('xlsx')
 const PaymentTransaction = require('../models/transactionsModel')
-const registrationConfirmTemplate = require('../utils/emailTemplates/registrationConfirmTemplate')
-const eventTimeUpdateTemplate = require('../utils/emailTemplates/eventTimeUpdateTemplate')
+const registrationConfirmEmail = require('../utils/emailTemplates/registrationConfirmEmail')
+const eventTimeUpdateEmail = require('../utils/emailTemplates/eventTimeUpdateEmail')
+const {
+  unregisterEventEmail,
+  eventApprovedEmail,
+  eventRejectedEmail,
+  manualRegistrationPendingEmail,
+  paymentVerificationFailedEmail,
+  ticketResentEmail
+} = require('../utils/emailTemplates/eventStatusEmails')
 
 exports.createEvent = async (req, res) => {
   try {
@@ -26,7 +35,10 @@ exports.createEvent = async (req, res) => {
       isFree,
       fee,
       seatCapacity,
-      isTicketRequired
+      isTicketRequired,
+      upiId,
+      isMultiDayEvent,
+      eventDates
     } = req.body
 
     isFree = isFree === 'true' || isFree === true
@@ -47,10 +59,20 @@ exports.createEvent = async (req, res) => {
         .json({ error: 'Seat capacity must be a positive number' })
     }
 
+    // parse multi-day logic
+    isMultiDayEvent = isMultiDayEvent === 'true' || isMultiDayEvent === true
+    let parsedEventDates = []
+    if (isMultiDayEvent && eventDates) {
+      parsedEventDates = JSON.parse(eventDates)
+    }
+
     // handle end time (default = +24h)
-    const eventEndTime = req.body.eventEndTime
-      ? new Date(req.body.eventEndTime)
-      : new Date(Date.now() + 24 * 60 * 60 * 1000)
+    let eventEndTime = req.body.eventEndTime;
+    if (!eventEndTime) {
+      eventEndTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    } else if (!isMultiDayEvent) {
+      eventEndTime = new Date(req.body.eventEndTime).toISOString()
+    }
 
     // parse hosts (array of objects)
     const hostedBy = JSON.parse(req.body.hostedBy || '[]')
@@ -86,6 +108,9 @@ exports.createEvent = async (req, res) => {
       fee,
       seatCapacity,
       isTicketRequired,
+      upiId,
+      isMultiDayEvent,
+      eventDates: parsedEventDates,
       attendeeCount: 0
     }
 
@@ -102,7 +127,7 @@ exports.createEvent = async (req, res) => {
 
 exports.Events = async (req, res) => {
   try {
-    const events = await Event.find({})
+    const events = await Event.find({ isDeleted: { $ne: true } })
     if (!events) {
       return res.status(404).json({ message: 'Event not found' })
     }
@@ -114,7 +139,7 @@ exports.Events = async (req, res) => {
 
 exports.pendingEvents = async (req, res) => {
   try {
-    const events = await Event.find({ statusAR: 'pending' })
+    const events = await Event.find({ statusAR: 'pending', isDeleted: { $ne: true } })
     if (!events) {
       return res.status(404).json({ message: 'Event not found' })
     }
@@ -126,7 +151,7 @@ exports.pendingEvents = async (req, res) => {
 
 exports.approvedEvents = async (req, res) => {
   try {
-    const events = await Event.find({ statusAR: 'approved' })
+    const events = await Event.find({ statusAR: 'approved', isDeleted: { $ne: true } })
       .sort({ createdAt: -1 })
       .lean()
     if (!events) {
@@ -162,7 +187,8 @@ exports.upcomingEvents = async (req, res) => {
   try {
     const events = await Event.find({
       statusAR: 'approved',
-      status: 'upcoming'
+      status: 'upcoming',
+      isDeleted: { $ne: true }
     })
       .sort({ createdAt: -1 })
     if (!events) {
@@ -177,7 +203,7 @@ exports.upcomingEvents = async (req, res) => {
 exports.getEvent = async (req, res) => {
   const { slug } = req.params
   try {
-    const event = await Event.findOne({ slug }).populate({
+    const event = await Event.findOne({ slug, isDeleted: { $ne: true } }).populate({
       path: 'createdBy',
       select: '_id name email'
     })
@@ -203,7 +229,7 @@ exports.getEvent = async (req, res) => {
 exports.downloadEventAttendees = async (req, res) => {
   const { slug } = req.params
   try {
-    const event = await Event.findOne({ slug }).select('title slug createdBy')
+    const event = await Event.findOne({ slug, isDeleted: { $ne: true } }).select('title slug createdBy')
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' })
@@ -231,20 +257,88 @@ exports.downloadEventAttendees = async (req, res) => {
       const user = entry.user || entry
       const name = user.name ? user.name.replace(/"/g, '""') : ""
       const phoneNo = user.phoneNo ? String(user.phoneNo).replace(/"/g, '""') : ""
+      const email = user.email ? user.email.replace(/"/g, '""') : ""
+      const status = entry.status || "approved"
+      const transactionId = entry.transactionId ? entry.transactionId.replace(/"/g, '""') : ""
+      const paymentTime = entry.paymentTime ? new Date(entry.paymentTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : ""
+      const approvalTime = entry.approvalTime ? new Date(entry.approvalTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : ""
 
-      return `"${index + 1}","${name}","${phoneNo}"`
+      return `"${index + 1}","${name}","${phoneNo}","${email}","${status}","${transactionId}","${paymentTime}","${approvalTime}"`
     })
 
-    const csvData = ["Serial Number,Name,Mobile Number", ...rows].join("\n")
+    const csvHeader = ['Serial Number', 'User Name', 'Phone Number', 'Email', 'Status', 'Transaction ID', 'Payment Time', 'Approval Time'].join(',')
+    const csvContent = [csvHeader, ...rows].join('\n')
 
-    const fileName = `${event.slug}-registered-users.csv`
     res.setHeader('Content-Type', 'text/csv')
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+    res.setHeader('Content-Disposition', `attachment; filename=${event.slug}-attendees.csv`)
 
-    return res.status(200).send(csvData)
+    res.status(200).send(csvContent)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error downloading attendees' })
+  }
+}
 
-  } catch (err) {
-    return res.status(500).json({ message: 'Server error generating CSV' })
+exports.downloadScannerSheet = async (req, res) => {
+  const { slug } = req.params
+  try {
+    const event = await Event.findOne({ slug, isDeleted: { $ne: true } })
+
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' })
+    }
+
+    const isAdmin = ['admin', 'super-admin'].includes(req.user.role)
+    const isCreator = event.createdBy && event.createdBy.toString() === req.user.id
+    if (!isAdmin && !isCreator) {
+      return res.status(403).json({ message: 'Unauthorized to download scanner sheet' })
+    }
+
+    // Only fetch approved registrations for the scanner
+    const attendees = await EventRegistration.find({ event: event._id, status: 'approved' })
+      .populate({
+        path: 'user',
+        select: 'name phoneNo email'
+      })
+      .lean()
+
+    const data = attendees.map((entry, index) => {
+      const user = entry.user || entry
+      return {
+        "S.No.": index + 1,
+        "Name": user.name || "",
+        "Email": user.email || "",
+        "Phone": user.phoneNo || "",
+        "Confirmation Date": entry.approvalTime ? new Date(entry.approvalTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : "",
+        "Scanned?": entry.scanCount > 0 ? "Yes" : "" 
+      }
+    });
+
+    const wb = xlsx.utils.book_new();
+
+    if (event.isMultiDayEvent && event.eventDates && event.eventDates.length > 0) {
+      event.eventDates.forEach((day, idx) => {
+        const dateStr = day.date ? new Date(day.date).toISOString().split('T')[0] : `Day ${idx + 1}`;
+        const ws = xlsx.utils.json_to_sheet(data);
+        // adjust column widths
+        ws['!cols'] = [{ wch: 5 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 15 }];
+        xlsx.utils.book_append_sheet(wb, ws, `Day ${idx + 1} - ${dateStr}`.substring(0, 31)); // excel sheet names max 31 chars
+      });
+    } else {
+      const ws = xlsx.utils.json_to_sheet(data);
+      ws['!cols'] = [{ wch: 5 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 15 }];
+      xlsx.utils.book_append_sheet(wb, ws, 'Scanner Sheet');
+    }
+
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${event.slug}-scanner-sheet.xlsx`);
+
+    res.status(200).send(buffer);
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error downloading scanner sheet' })
   }
 }
 
@@ -317,7 +411,7 @@ exports.registerEvent = async (req, res) => {
           event: eventid,
           user: userid,
           token: registrationToken,
-          used: false
+          status: 'approved'
         }],
         { session }
       )
@@ -350,7 +444,7 @@ exports.registerEvent = async (req, res) => {
       const emailContent = registrationConfirmTemplate({
         userName: user.name,
         eventTitle: event.title,
-        eventDate: new Date(event.eventDate).toDateString(),
+        eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
         eventLocation: event.location,
         qrImageUrl: uploaded.secure_url,
         isTicketRequired: true
@@ -374,7 +468,7 @@ exports.registerEvent = async (req, res) => {
       const emailContent = registrationConfirmTemplate({
         userName: user.name,
         eventTitle: event.title,
-        eventDate: new Date(event.eventDate).toDateString(),
+        eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
         eventLocation: event.location,
         isTicketRequired: false
       })
@@ -459,40 +553,49 @@ exports.scanTicket = async (req, res) => {
       })
     }
 
-    // check if ticket already used
-    if (registration.used) {
+    // check if ticket has reached scan limit atomically
+    const updatedRegistration = await EventRegistration.findOneAndUpdate(
+      { _id: registration._id, scanCount: { $lt: 4 } },
+      { $inc: { scanCount: 1 } },
+      { new: true }
+    );
+
+    if (!updatedRegistration) {
       return res.status(200).json({
         success: true,
         status: 'already_used',
-        message: 'Warning - Ticket Already Used!',
+        message: 'Warning - Ticket Scan Limit Reached (4/4)!',
         attendeeName: registration.user.name,
         attendeeEmail: registration.user.email,
         newCheckInCount: event.checkedInCount,
-        seatCapacity: event.seatCapacity
-      })
+        seatCapacity: event.seatCapacity,
+        scanCount: registration.scanCount
+      });
     }
 
-    // atomically mark ticket as used AND increment checkedInCount
-    registration.used = true
-    await registration.save()
+    let updatedEvent = event;
+    if (updatedRegistration.scanCount === 1) {
+      updatedEvent = await Event.findByIdAndUpdate(
+        event._id,
+        { $inc: { checkedInCount: 1 } },
+        { new: true }
+      );
+    }
 
-    const updatedEvent = await Event.findByIdAndUpdate(
-      event._id,
-      { $inc: { checkedInCount: 1 } },
-      { new: true }
-    )
+    res.locals.documentId = updatedRegistration._id
 
     return res.status(200).json({
       success: true,
       status: 'verified',
       message: 'Ticket Verified',
-      attendeeName: registration.user.name,
-      attendeeEmail: registration.user.email,
+      attendeeName: updatedRegistration.user.name,
+      attendeeEmail: updatedRegistration.user.email,
       newCheckInCount: updatedEvent.checkedInCount,
-      seatCapacity: updatedEvent.seatCapacity
+      seatCapacity: updatedEvent.seatCapacity,
+      scanCount: updatedRegistration.scanCount
     })
-  } catch (error) {
-    console.error('Scan ticket error:', error)
+  } catch (err) {
+    console.error('Scan ticket error:', err)
     res.status(500).json({
       success: false,
       status: 'error',
@@ -540,18 +643,23 @@ exports.unregisterEvent = async (req, res) => {
       }
     }
 
-    // decrement attendee count atomically
-    await Event.findByIdAndUpdate(eventid, { $inc: { attendeeCount: -1 } })
+    // decrement attendee count atomically ONLY if they were actually taking up a seat
+    if (regEntry.status === 'approved') {
+      await Event.findOneAndUpdate(
+        { _id: eventid, attendeeCount: { $gt: 0 } },
+        { $inc: { attendeeCount: -1 } }
+      )
+    }
 
     // send cancellation email
-    const text = `Hi ${user.name},
-    You have successfully unregistered from "${event.title}" scheduled on ${new Date(
-      event.eventDate
-    ).toDateString()} at ${event.location}.
-    Hope to see you at our future events!
-    – ISA-India`
+    const emailContent = unregisterEventEmail({
+      userName: user.name,
+      eventTitle: event.title,
+      eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
+      eventLocation: event.location
+    })
 
-    await sendEmail(user.email, `Unregistered from ${event.title}`, text)
+    await sendEmail(user.email, `Unregistered from ${event.title}`, emailContent)
 
     // fetch updated event with registrations for response
     const updatedEvent = await Event.findById(eventid)
@@ -605,12 +713,28 @@ exports.updateEvent = async (req, res) => {
       updates.seatCapacity = Number(updates.seatCapacity)
     }
 
+    if (updates.upiId !== undefined) {
+      updates.upiId = updates.upiId.trim()
+    }
+
     // parse hostedBy JSON if provided
     if (updates.hostedBy) {
       try {
         updates.hostedBy = JSON.parse(updates.hostedBy)
       } catch (err) {
         return res.status(400).json({ message: 'Invalid hostedBy format' })
+      }
+    }
+
+    // parse multi-day logic
+    if (updates.isMultiDayEvent !== undefined) {
+      updates.isMultiDayEvent = updates.isMultiDayEvent === 'true' || updates.isMultiDayEvent === true
+    }
+    if (updates.eventDates) {
+      try {
+        updates.eventDates = JSON.parse(updates.eventDates)
+      } catch (err) {
+        return res.status(400).json({ message: 'Invalid eventDates format' })
       }
     }
 
@@ -663,7 +787,7 @@ exports.updateEvent = async (req, res) => {
       // send emails in background (don't block the response)
       for (const reg of registrations) {
         if (reg.user?.email) {
-          const html = eventTimeUpdateTemplate({
+          const emailContent = eventTimeUpdateEmail({
             userName: reg.user.name,
             eventTitle: event.title,
             oldDate: formatIST(oldEventDate),
@@ -696,12 +820,10 @@ exports.deleteEvent = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized to delete this event' })
     }
 
-    await cloudinary.uploader.destroy(event.publicId)
+    // Instead of permanent deletion, we perform a soft delete
+    event.isDeleted = true
+    await event.save()
 
-    // clean up all registrations for this event
-    await EventRegistration.deleteMany({ event: id })
-
-    await event.deleteOne()
     res.status(200).json({ message: 'Event deleted successfully' })
   } catch (error) {
     res.status(500).json({ message: 'Error deleting event', error })
@@ -724,56 +846,39 @@ exports.changeStatus = async (req, res) => {
 
     if (status === 'approved') {
       // sending confirmation email
-      const text = `
-    <p>Hello ${event.createdBy.name},</p>
+      const emailContent = eventApprovedEmail({
+        userName: event.createdBy.name,
+        eventTitle: event.title,
+        eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
+        eventLocation: event.location,
+        eventUrl: `${process.env.CLIENT_URL}/events/${event.slug}`
+      });
 
-    <p>Good news! 🎉 Your event <strong>"${event.title}"</strong> scheduled for 
-    <strong>${new Date(event.eventDate).toDateString()}</strong> at 
-    <strong>${event.location}</strong> has been approved and is now live on ISA.</p>
-
-    <p>👉 Share your event link with others to start registrations:  
-    <a href="${process.env.CLIENT_URL}/events/${event.slug}" target="_blank">View Event</a></p>
-
-    <p>Thank you for choosing our platform to host your event—we're excited to see it come to life!</p>
-
-    <p>Best regards,<br>
-    Team ISA</p>
-    `
       await sendEmail(
         event.createdBy.email,
         `Your event ${event.title} is now live.`,
-        text
+        emailContent
       )
     }
 
     if (status === 'rejected') {
       // sending rejection email
-      const text = `
-      <p>Hello ${event.createdBy.name},</p>
-    
-      <p>We regret to inform you that your event <strong>"${event.title}"</strong>, 
-      scheduled for <strong>${new Date(event.eventDate).toDateString()}</strong> at 
-      <strong>${event.location}</strong>, has been <span style="color:red;font-weight:bold;">rejected</span> after review.</p>
-    
-      <p><strong>Reason from Admin:</strong></p>
-      <blockquote style="border-left: 3px solid #ccc; margin: 10px 0; padding-left: 10px; color:#555;">
-        ${event.adminComment || 'No specific reason provided.'}
-      </blockquote>
-    
-      <p>If you believe this was a mistake, you may revise and resubmit your event for consideration.</p>
-    
-      <p>We appreciate your interest in sharing events with the ISA community and encourage you to keep contributing!</p>
-    
-      <p>Best regards,<br>
-      Team ISA</p>
-      `
+      const emailContent = eventRejectedEmail({
+        userName: event.createdBy.name,
+        eventTitle: event.title,
+        eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
+        eventLocation: event.location,
+        adminComment: event.adminComment
+      });
 
       await sendEmail(
         event.createdBy.email,
         `Update on your event: ${event.title}`,
-        text
+        emailContent
       )
     }
+
+    res.locals.documentId = event._id
 
     res.status(200).json({ message: 'Status changes successfully' })
   } catch (err) {
@@ -840,4 +945,495 @@ exports.toggleRegistration = async (req, res) => {
       message: 'Internal Server Error'
     })
   }
+}
+
+exports.manualRegisterEvent = async (req, res) => {
+  try {
+    const { eventid, userid } = req.params
+    const { transactionId } = req.body
+    const tokenUserId = req.user.id
+
+    if (userid !== tokenUserId) {
+      return res.status(403).json({ message: "Can't validate user" })
+    }
+
+    if (!transactionId || transactionId.trim() === '') {
+      return res.status(400).json({ message: 'Transaction ID is required' })
+    }
+
+    const txnIdClean = transactionId.trim();
+    if (!/^\d{12}$/.test(txnIdClean)) {
+      return res.status(400).json({ message: 'Invalid Transaction ID. It must be exactly 12 digits long.' })
+    }
+
+    const event = await Event.findById(eventid)
+    if (!event) return res.status(400).json({ message: 'Event not found' })
+
+    if (!event.isRegistrationOpen) {
+      return res.status(400).json({ message: 'Registration for this event is currently closed.' })
+    }
+
+    // Check if seats are full
+    if (event.seatCapacity && event.attendeeCount >= event.seatCapacity) {
+      return res.status(400).json({ message: 'Seats are full. Registration closed.' })
+    }
+
+    // Check unique transaction ID
+    const existingTxn = await EventRegistration.findOne({ transactionId: txnIdClean })
+    if (existingTxn) {
+      return res.status(400).json({ message: 'A registration with this Transaction ID already exists. Please verify.' })
+    }
+
+    // Check if user is already registered
+    const existingReg = await EventRegistration.findOne({ event: eventid, user: userid })
+    if (existingReg) {
+      if (existingReg.status === 'rejected' || existingReg.status === 'payment_not_found') {
+        // Allow re-submission
+        existingReg.status = 'pending'
+        existingReg.transactionId = txnIdClean
+        existingReg.paymentTime = Date.now()
+        existingReg.isManualPayment = true
+        existingReg.isResubmitted = true
+        await existingReg.save()
+      } else {
+        return res.status(400).json({ message: 'You are already registered or have a pending registration for this event.' })
+      }
+    } else {
+      await EventRegistration.create({
+        event: eventid,
+        user: userid,
+        status: 'pending',
+        transactionId: txnIdClean,
+        paymentTime: Date.now(),
+        isManualPayment: true
+      })
+    }
+
+    const user = await User.findById(userid)
+
+    // Send pending verification email
+    const emailContent = manualRegistrationPendingEmail({
+      userName: user.name,
+      eventTitle: event.title,
+      transactionId: txnIdClean
+    });
+    
+    await sendEmail(user.email, `Registration Pending Verification: ${event.title}`, emailContent)
+
+    const freshEvent = await Event.findById(eventid)
+    const registeredUsers = await EventRegistration.find({ event: eventid }).populate('user', 'name email').lean()
+    const eventObj = freshEvent.toObject()
+    eventObj.registeredUsers = registeredUsers
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment details submitted successfully. Your registration is pending verification.',
+      data: eventObj
+    })
+  } catch (error) {
+    console.error('Error in manual registration:', error)
+    res.status(500).json({ success: false, message: 'Server error during registration' })
+  }
+}
+
+exports.getEventRegistrations = async (req, res) => {
+  try {
+    const { slug } = req.params
+    const event = await Event.findOne({ slug, isDeleted: { $ne: true } })
+    if (!event) return res.status(404).json({ message: 'Event not found' })
+
+    const isAdmin = ['admin', 'super-admin'].includes(req.user.role)
+    const isCreator = event.createdBy && event.createdBy.toString() === req.user.id
+    if (!isAdmin && !isCreator) {
+      return res.status(403).json({ message: 'Unauthorized to view registrations' })
+    }
+
+    const registrations = await EventRegistration.find({ event: event._id }).populate('user', 'name email phoneNo')
+    res.status(200).json(registrations)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+exports.approveManualRegistration = async (req, res) => {
+  const session = await mongoose.startSession()
+  try {
+    session.startTransaction()
+    const { regId } = req.params
+    const registration = await EventRegistration.findById(regId).populate('user', 'name email').session(session)
+    if (!registration) {
+      await session.abortTransaction()
+      return res.status(404).json({ message: 'Registration not found' })
+    }
+
+    const event = await Event.findById(registration.event).session(session)
+
+    // Authorization check
+    const isAdmin = ['admin', 'super-admin'].includes(req.user.role)
+    const isCreator = event.createdBy && event.createdBy.toString() === req.user.id
+    if (!isAdmin && !isCreator) {
+      await session.abortTransaction()
+      return res.status(403).json({ message: 'Unauthorized' })
+    }
+
+    if (registration.status === 'approved') {
+      await session.abortTransaction()
+      return res.status(400).json({ message: 'Already approved' })
+    }
+
+    let updatedEvent;
+    if (event.seatCapacity && event.seatCapacity > 0) {
+      updatedEvent = await Event.findOneAndUpdate(
+        { _id: event._id, $expr: { $lt: ['$attendeeCount', '$seatCapacity'] } },
+        { $inc: { attendeeCount: 1 } },
+        { new: true, session }
+      );
+      if (!updatedEvent) {
+        await session.abortTransaction();
+        return res.status(400).json({ message: 'Event is at full capacity' });
+      }
+    } else {
+      updatedEvent = await Event.findByIdAndUpdate(
+        event._id,
+        { $inc: { attendeeCount: 1 } },
+        { new: true, session }
+      );
+    }
+
+    registration.status = 'approved'
+    registration.approvalTime = Date.now()
+    const registrationToken = uuidv4()
+    registration.token = registrationToken
+    await registration.save()
+
+    await session.commitTransaction()
+
+    // Send ticket email
+    try {
+      if (event.isTicketRequired) {
+        const qrDataUrl = await QRCode.toDataURL(registrationToken)
+        const qrBuffer = await QRCode.toBuffer(registrationToken)
+        const uploaded = await cloudinary.uploader.upload(qrDataUrl, { folder: 'event_qrcodes' })
+        const emailContent = registrationConfirmEmail({
+          userName: registration.user.name,
+          eventTitle: event.title,
+          eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
+          eventLocation: event.location,
+          qrImageUrl: uploaded.secure_url,
+          isTicketRequired: true
+        })
+        await sendEmailWithAttachment(registration.user.email, `Ticket Confirmed for ${event.title}`, emailContent, [{ filename: 'qrcode.png', content: qrBuffer, cid: 'qrcode@event' }])
+      } else {
+        const emailContent = registrationConfirmEmail({
+          userName: registration.user.name,
+          eventTitle: event.title,
+          eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
+          eventLocation: event.location,
+          isTicketRequired: false
+        })
+        await sendEmail(registration.user.email, `Registration Confirmed for ${event.title}`, emailContent)
+      }
+      
+      registration.$session(null);
+      registration.emailSent = true;
+      await registration.save();
+    } catch (emailErr) {
+      console.error("Email failed to send for approval:", emailErr);
+      registration.$session(null);
+      registration.emailSent = false;
+      await registration.save();
+    }
+
+    res.locals.documentId = registration._id
+
+    res.status(200).json({ success: true, message: 'Registration approved successfully', registration })
+  } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction()
+    }
+    console.error(error)
+    res.status(500).json({ message: 'Server error approving registration' })
+  } finally {
+    session.endSession()
+  }
+}
+
+exports.reviewManualRegistration = async (req, res) => {
+  try {
+    const { regId } = req.params
+    const registration = await EventRegistration.findById(regId).populate('user', 'name email')
+    if (!registration) return res.status(404).json({ message: 'Registration not found' })
+
+    const event = await Event.findById(registration.event)
+    const isAdmin = ['admin', 'super-admin'].includes(req.user.role)
+    const isCreator = event.createdBy && event.createdBy.toString() === req.user.id
+    if (!isAdmin && !isCreator) return res.status(403).json({ message: 'Unauthorized' })
+
+    // If reverting an approved registration, decrement attendee count atomically
+    if (registration.status === 'approved') {
+      await Event.findOneAndUpdate(
+        { _id: event._id, attendeeCount: { $gt: 0 } },
+        { $inc: { attendeeCount: -1 } }
+      );
+    }
+
+    registration.status = 'payment_not_found'
+    await registration.save()
+
+    // Optionally notify user
+    const emailContent = paymentVerificationFailedEmail({
+      userName: registration.user.name,
+      eventTitle: event.title,
+      transactionId: registration.transactionId
+    });
+
+    await sendEmail(registration.user.email, `Payment Verification Failed: ${event.title}`, emailContent)
+
+    res.locals.documentId = registration._id
+
+    res.status(200).json({ success: true, message: 'Registration flagged for review', registration })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+exports.resendTicket = async (req, res) => {
+  const { regId } = req.params
+
+  try {
+    const registration = await EventRegistration.findById(regId).populate('user').populate('event')
+    if (!registration) {
+      return res.status(404).json({ message: 'Registration not found' })
+    }
+
+    if (registration.status !== 'approved') {
+      return res.status(400).json({ message: 'Cannot send ticket for non-approved registration' })
+    }
+
+    if (!registration.token) {
+      return res.status(400).json({ message: 'Ticket token not found for this registration' })
+    }
+
+    // Generate QR Code Buffer
+    const QRCode = require('qrcode')
+    const cloudinary = require('../utils/cloudinary')
+    const qrCodeBuffer = await QRCode.toBuffer(registration.token, {
+      type: 'png',
+      width: 400,
+      margin: 2
+    })
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: 'isa_qr_codes' },
+      async (error, result) => {
+        if (error) {
+          console.error("Cloudinary Error:", error)
+          return res.status(500).json({ message: 'Error generating QR code image' })
+        }
+
+        const qrImageUrl = result.secure_url
+
+        const emailContent = ticketResentEmail({
+          userName: registration.user.name,
+          eventTitle: registration.event.title,
+          qrImageUrl: qrImageUrl
+        });
+
+        try {
+          await sendEmail(registration.user.email, `Registration Confirmed for ${registration.event.title}`, emailContent)
+          registration.emailSent = true
+          await registration.save()
+          
+          res.locals.documentId = registration._id
+          return res.status(200).json({ message: 'Ticket resent successfully' })
+        } catch (emailErr) {
+          console.error("Email resend failed:", emailErr)
+          registration.emailSent = false
+          await registration.save()
+          return res.status(500).json({ message: 'Failed to send email' })
+        }
+      }
+    )
+
+    // stream buffer to cloudinary
+    const stream = require('stream')
+    const bufferStream = new stream.PassThrough()
+    bufferStream.end(qrCodeBuffer)
+    bufferStream.pipe(uploadStream)
+
+  } catch (err) {
+    console.error("Resend ticket error:", err)
+    res.status(500).json({ message: 'Server error while resending ticket' })
+  }
+}
+
+exports.bulkApproveManualRegistrations = async (req, res) => {
+  const { regIds } = req.body;
+  if (!regIds || !Array.isArray(regIds)) {
+    return res.status(400).json({ message: 'Invalid registration IDs array' });
+  }
+
+  const results = { successful: 0, failed: 0, emailFailures: 0 };
+
+  for (const regId of regIds) {
+    let session;
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
+      const registration = await EventRegistration.findById(regId).populate('user', 'name email').session(session);
+      if (!registration || registration.status === 'approved') {
+        await session.abortTransaction();
+        session.endSession();
+        continue;
+      }
+
+      const event = await Event.findById(registration.event).session(session);
+      const isAdmin = ['admin', 'super-admin'].includes(req.user.role);
+      const isCreator = event.createdBy && event.createdBy.toString() === req.user.id;
+      if (!isAdmin && !isCreator) {
+        await session.abortTransaction();
+        session.endSession();
+        continue;
+      }
+
+      let updatedEvent;
+      if (event.seatCapacity && event.seatCapacity > 0) {
+        updatedEvent = await Event.findOneAndUpdate(
+          { _id: event._id, $expr: { $lt: ['$attendeeCount', '$seatCapacity'] } },
+          { $inc: { attendeeCount: 1 } },
+          { new: true, session }
+        );
+        if (!updatedEvent) {
+          // No seats left
+          await session.abortTransaction();
+          session.endSession();
+          continue;
+        }
+      } else {
+        updatedEvent = await Event.findByIdAndUpdate(
+          event._id,
+          { $inc: { attendeeCount: 1 } },
+          { new: true, session }
+        );
+      }
+
+      registration.status = 'approved';
+      registration.approvalTime = Date.now();
+      const registrationToken = uuidv4();
+      registration.token = registrationToken;
+      await registration.save();
+
+      await session.commitTransaction();
+      session.endSession();
+      results.successful += 1;
+
+      // Send ticket email
+      try {
+        if (event.isTicketRequired) {
+          const qrDataUrl = await QRCode.toDataURL(registrationToken)
+          const qrBuffer = await QRCode.toBuffer(registrationToken)
+          const uploaded = await cloudinary.uploader.upload(qrDataUrl, { folder: 'event_qrcodes' })
+          const emailContent = registrationConfirmEmail({
+            userName: registration.user.name,
+            eventTitle: event.title,
+            eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
+            eventLocation: event.location,
+            qrImageUrl: uploaded.secure_url,
+            isTicketRequired: true
+          })
+          await sendEmailWithAttachment(registration.user.email, `Ticket Confirmed for ${event.title}`, emailContent, [{ filename: 'qrcode.png', content: qrBuffer, cid: 'qrcode@event' }])
+        } else {
+          const emailContent = registrationConfirmEmail({
+            userName: registration.user.name,
+            eventTitle: event.title,
+            eventDate: new Date(event.eventDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' }),
+            eventLocation: event.location,
+            isTicketRequired: false
+          })
+          await sendEmail(registration.user.email, `Registration Confirmed for ${event.title}`, emailContent)
+        }
+        
+        registration.$session(null);
+        registration.emailSent = true;
+        await registration.save();
+      } catch (emailErr) {
+        console.error(`Email failed to send for bulk approval regId ${regId}:`, emailErr);
+        registration.$session(null);
+        registration.emailSent = false;
+        await registration.save();
+        results.emailFailures += 1;
+      }
+
+    } catch (err) {
+      if (session && session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      if (session) session.endSession();
+      console.error(`Error approving regId ${regId}:`, err);
+      results.failed += 1;
+    }
+  }
+
+  res.status(200).json({ success: true, message: 'Bulk approval completed', results });
+}
+
+exports.bulkResendTickets = async (req, res) => {
+  const { regIds } = req.body;
+  if (!regIds || !Array.isArray(regIds)) {
+    return res.status(400).json({ message: 'Invalid registration IDs array' });
+  }
+
+  const results = { successful: 0, failed: 0 };
+
+  for (const regId of regIds) {
+    try {
+      const registration = await EventRegistration.findById(regId).populate('user').populate('event');
+      if (!registration || registration.status !== 'approved' || !registration.token) {
+        results.failed += 1;
+        continue;
+      }
+
+      const qrCodeBuffer = await QRCode.toBuffer(registration.token, { type: 'png', width: 400, margin: 2 })
+      
+      const uploadPromise = new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream({ folder: 'isa_qr_codes' }, (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        });
+        const requireStream = require('stream');
+        const bufferStream = new requireStream.PassThrough();
+        bufferStream.end(qrCodeBuffer);
+        bufferStream.pipe(stream);
+      });
+
+      const uploaded = await uploadPromise;
+
+      const emailContent = ticketResentEmail({
+        userName: registration.user.name,
+        eventTitle: registration.event.title,
+        qrImageUrl: uploaded.secure_url
+      });
+
+      await sendEmail(registration.user.email, `Registration Confirmed for ${registration.event.title}`, emailContent);
+      
+      registration.emailSent = true;
+      await registration.save();
+      results.successful += 1;
+    } catch (err) {
+      console.error(`Failed to resend ticket for regId ${regId}:`, err);
+      try {
+        const registration = await EventRegistration.findById(regId);
+        if (registration) {
+          registration.emailSent = false;
+          await registration.save();
+        }
+      } catch(e) {}
+      results.failed += 1;
+    }
+  }
+
+  res.status(200).json({ message: 'Bulk resend completed', results });
 }

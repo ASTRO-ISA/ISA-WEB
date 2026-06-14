@@ -260,6 +260,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Spinner from "@/components/ui/Spinner";
 import PaymentModal from "@/components/popups/PymentModal";
+import ManualPaymentModal from "@/components/popups/ManualPaymentModal";
+import ResubmitPaymentModal from "@/components/popups/ResubmitPaymentModal";
 import FormatDate from "@/components/ui/FormatDate";
 import FormatTime from "@/components/ui/FormatTime";
 import RegisterButton from "./RegisterButton";
@@ -274,6 +276,9 @@ const EventDetails = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isResubmission, setIsResubmission] = useState(false);
+
+  const isAdmin = userInfo?.user?.role === "admin" || userInfo?.user?.role === "super-admin";
 
   const fetchEvent = async () => {
     try {
@@ -353,6 +358,11 @@ const EventDetails = () => {
   };
 
   const handlePaidRegister = async (_userId: string, eventData: any) => {
+    const userReg = eventData?.registeredUsers?.find((e: any) => {
+      const registeredUserId = normalizeUserId(e?.user?._id || e?.user)
+      return registeredUserId === normalizeUserId(userInfo?.user?._id)
+    });
+    setIsResubmission(userReg?.status === 'payment_not_found');
     setSelectedEvent(eventData);
   };
 
@@ -519,23 +529,33 @@ const EventDetails = () => {
                   className="bg-space-purple text-white px-3 py-1 rounded flex items-center gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  Download Registered Users
+                  Download CSV
                 </button>
 
                 <button
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Are you sure you want to delete this event? This action can't be undone."
-                      )
-                    ) {
-                      deleteEvent();
-                    }
-                  }}
-                  className="bg-red-700 text-white px-3 py-1 rounded"
+                  onClick={() => navigate(`/events/manage/${event.slug}`)}
+                  className="bg-space-accent hover:bg-space-accent/80 text-white px-3 py-1 rounded"
                 >
-                  {deleting ? <Spinner /> : "Delete Event"}
+                  Manage Registrations
                 </button>
+
+                {/* Delete button only visible for free events on this page. Paid events must be deleted via admin panel */}
+                {event.isFree && (
+                  <button
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this event? This action can't be undone."
+                        )
+                      ) {
+                        deleteEvent();
+                      }
+                    }}
+                    className="bg-red-700 text-white px-3 py-1 rounded"
+                  >
+                    {deleting ? <Spinner /> : "Delete Event"}
+                  </button>
+                )}
 
                 {event.isTicketRequired && (
                   <button
@@ -561,11 +581,28 @@ const EventDetails = () => {
       </main>
 
       {selectedEvent && (
-        <PaymentModal
-          event={selectedEvent}
-          userId={userInfo?.user?._id}
-          onClose={() => setSelectedEvent(null)}
-        />
+        isResubmission ? (
+          <ResubmitPaymentModal
+            event={selectedEvent}
+            userId={userInfo?.user?._id}
+            onClose={() => { setSelectedEvent(null); setIsResubmission(false); }}
+            onSuccess={() => fetchEvent()}
+            onSwitchToPay={() => setIsResubmission(false)}
+          />
+        ) : selectedEvent.upiId ? (
+          <ManualPaymentModal
+            event={selectedEvent}
+            userId={userInfo?.user?._id}
+            onClose={() => { setSelectedEvent(null); setIsResubmission(false); }}
+            onSuccess={() => fetchEvent()}
+          />
+        ) : (
+          <PaymentModal
+            event={selectedEvent}
+            userId={userInfo?.user?._id}
+            onClose={() => { setSelectedEvent(null); setIsResubmission(false); }}
+          />
+        )
       )}
     </div>
   );

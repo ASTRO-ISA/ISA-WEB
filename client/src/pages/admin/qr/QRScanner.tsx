@@ -84,6 +84,7 @@ const QRScannerPage = () => {
     message: string
     attendeeName?: string
     attendeeEmail?: string
+    scanCount?: number
   } | null>(null)
 
   // add scanner panel
@@ -169,27 +170,28 @@ const QRScannerPage = () => {
 
     try {
       const res = await api.post('/events/scan', { token: data.text })
-      const { status, message, attendeeName, attendeeEmail, newCheckInCount } = res.data
+      const { status, message, attendeeName, attendeeEmail, newCheckInCount, scanCount } = res.data
 
-      setScanResult({ status, message, attendeeName, attendeeEmail })
+      setScanResult({ status, message, attendeeName, attendeeEmail, scanCount })
+      setCooldown(false)
 
       // zero-latency counter update from api response
       if (newCheckInCount !== undefined) {
         setCheckedInCount(newCheckInCount)
       }
     } catch (err: any) {
+      setCooldown(false)
       const errData = err.response?.data
       setScanResult({
         status: errData?.status || 'error',
         message: errData?.message || 'server error, try again',
       })
     }
+  }
 
-    // 2-second cooldown before next scan
-    cooldownTimer.current = setTimeout(() => {
-      setCooldown(false)
-      setScanning(true)
-    }, COOLDOWN_MS)
+  const resetScanner = () => {
+    setScanResult(null)
+    setScanning(true)
   }
 
   const handleError = (err: any) => {
@@ -450,8 +452,20 @@ const QRScannerPage = () => {
                       )}
                     </p>
                   )}
+                  {scanResult.scanCount !== undefined && (
+                    <p className="text-gray-300 text-xs mt-1.5 font-bold">
+                      Ticket Scanned: <span style={{ color: currentStatus.text }}>{scanResult.scanCount} {scanResult.scanCount === 1 ? 'time' : 'times'}</span>
+                    </p>
+                  )}
                 </div>
               </div>
+              <button
+                onClick={resetScanner}
+                className="mt-4 w-full py-2.5 rounded-lg text-sm font-bold transition-all text-white hover:opacity-90 active:scale-[0.98]"
+                style={{ background: currentStatus.border, boxShadow: `0 4px 14px ${currentStatus.border}40` }}
+              >
+                Okay, Next Ticket
+              </button>
             </motion.div>
           ) : (
             <motion.div

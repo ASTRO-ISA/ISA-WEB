@@ -5,6 +5,7 @@ const FormatDate = ({ date }) => {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
   });
 
   return <span>{formatted}</span>;

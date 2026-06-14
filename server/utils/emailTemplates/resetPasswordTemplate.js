@@ -13,7 +13,7 @@ const resetPasswordTemplate = ({ userName, resetLink }) => {
   Your account will remain secure and no changes will be made.</p>
 
   <p>Best regards,<br>
-  Team ISA</p>
+  ISA-India</p>
   `
 }
 

@@ -15,6 +15,7 @@ import AdminEvents from "./admin-events/AdminEvents";
 import { useQuery } from "@tanstack/react-query";
 import ManageAdmins from "./ManageAdmins";
 import AdminTransactions from "./AdminTransactions";
+import AdminAuditLogs from "./AdminAuditLogs";
 import { useAuth } from "@/context/AuthContext";
 // import QRScannerPage from "./qr/QRScanner";
 import { Helmet } from "react-helmet-async";
@@ -70,6 +71,7 @@ export default function AdminDashboard() {
                 <>
                 <TabsTrigger value="manageAdmins">Manage Admins</TabsTrigger>
                 <TabsTrigger value="transactions">Manage Transactions</TabsTrigger>
+                <TabsTrigger value="auditLogs">Audit Logs</TabsTrigger>
                 </>
               )}
             </TabsList>
@@ -132,6 +134,9 @@ export default function AdminDashboard() {
             </TabsContent>
             <TabsContent value="transactions" className="space-y-6">
               <AdminTransactions />
+            </TabsContent>
+            <TabsContent value="auditLogs" className="space-y-6">
+              <AdminAuditLogs />
             </TabsContent>
             </>
           )}

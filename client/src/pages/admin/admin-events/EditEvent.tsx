@@ -11,6 +11,8 @@ interface HostedBy { name: string; }
 interface EventFormData {
   title: string;
   description: string;
+  isMultiDayEvent: boolean;
+  eventDates: { date: string; startTime: string; endTime: string }[];
   eventDate: string;
   eventEndTime: string;
   location: string;
@@ -22,6 +24,7 @@ interface EventFormData {
   status: string;
   isFree: boolean;
   fee: string;
+  upiId: string;
   isTicketRequired: boolean;
 }
 
@@ -35,6 +38,8 @@ export default function EditEvent() {
   const [eventFormData, setEventFormData] = useState<EventFormData>({
     title: "",
     description: "",
+    isMultiDayEvent: false,
+    eventDates: [{ date: "", startTime: "", endTime: "" }],
     eventDate: "",
     eventEndTime: "",
     location: "",
@@ -46,6 +51,7 @@ export default function EditEvent() {
     status: "",
     isFree: true,
     fee: "",
+    upiId: "",
     isTicketRequired: true,
   });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -71,6 +77,12 @@ export default function EditEvent() {
         setEventFormData({
           title: event.title ?? "",
           description: event.description ?? "",
+          isMultiDayEvent: event.isMultiDayEvent ?? false,
+          eventDates: event.eventDates?.length ? event.eventDates.map((day: any) => ({
+            date: day.date ? new Date(day.date).toISOString().split('T')[0] : "",
+            startTime: day.startTime ?? "",
+            endTime: day.endTime ?? ""
+          })) : [{ date: "", startTime: "", endTime: "" }],
           eventDate: toLocalDatetimeString(event.eventDate),
           eventEndTime: toLocalDatetimeString(event.eventEndTime),
           location: event.location ?? "",
@@ -82,6 +94,7 @@ export default function EditEvent() {
           status: event.status ?? "",
           isFree: event.isFree ?? true,
           fee: event.fee ? event.fee.toString() : "",
+          upiId: event.upiId ?? "",
           isTicketRequired: event.isTicketRequired ?? true,
         });
       })
@@ -114,6 +127,18 @@ export default function EditEvent() {
         ...eventFormData, 
         isTicketRequired: value === "true" 
       });
+    } else if (name === "isMultiDayEvent") {
+      setEventFormData({ 
+        ...eventFormData, 
+        isMultiDayEvent: value === "true" 
+      });
+    } else if (name.startsWith("eventDates")) {
+      const parts = name.split("-");
+      const idx = parseInt(parts[1], 10);
+      const field = parts[2] as keyof typeof eventFormData.eventDates[0];
+      const updatedDates = [...eventFormData.eventDates];
+      updatedDates[idx][field] = value;
+      setEventFormData({ ...eventFormData, eventDates: updatedDates });
     } else if (type === "number") {
       setEventFormData({ 
         ...eventFormData, 
@@ -132,18 +157,35 @@ export default function EditEvent() {
     setEventFormData({ ...eventFormData, hostedBy: [...eventFormData.hostedBy, { name: "" }] });
   };
 
+  const addEventDate = () => {
+    setEventFormData({
+      ...eventFormData,
+      eventDates: [...eventFormData.eventDates, { date: "", startTime: "", endTime: "" }],
+    });
+  };
+
+  const removeEventDate = (idx: number) => {
+    const updatedDates = eventFormData.eventDates.filter((_, i) => i !== idx);
+    setEventFormData({
+      ...eventFormData,
+      eventDates: updatedDates,
+    });
+  };
+
   // Mutation
   const updateMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
         if (!eventId) throw new Error('Event ID is missing')
       const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
-          if (key === "hostedBy") {
+          if (key === "hostedBy" || key === "eventDates") {
             formData.append(key, JSON.stringify(value))
           } else if (key === "eventDate" || key === "eventEndTime") {
-            if (value) {
-              formData.append(key, new Date(value).toISOString());
+            if (value && !data.isMultiDayEvent) {
+              formData.append(key, new Date(value as string).toISOString());
             }
+          } else if (key === "isMultiDayEvent") {
+            formData.append(key, value ? "true" : "false")
           } else if (key === "isFree") {
             formData.append(key, value ? "true" : "false")
           } else if (key === "isTicketRequired") {
@@ -153,10 +195,27 @@ export default function EditEvent() {
             if (!data.isFree && value !== "" && value !== null && value !== undefined) {
               formData.append(key, value.toString())
             }
+          } else if (key === "upiId") {
+            if (!data.isFree && value) {
+              formData.append(key, value.toString())
+            }
           } else if (value !== null && value !== undefined && value !== "") {
             formData.append(key, value.toString())
           }
         });
+
+      // Provide fallback values for required fields when multi-day event is checked
+      if (data.isMultiDayEvent && data.eventDates.length > 0) {
+        const firstDay = data.eventDates[0];
+        const lastDay = data.eventDates[data.eventDates.length - 1];
+        
+        // Combine date and time to create a proper local Date object
+        const firstDateTimeStr = `${firstDay.date}T${firstDay.startTime || "00:00"}`;
+        formData.append("eventDate", new Date(firstDateTimeStr).toISOString());
+        
+        // End time is stored as string in this logic
+        formData.append("eventEndTime", lastDay.endTime);
+      }
       if (thumbnailFile) formData.append("thumbnail", thumbnailFile);
       return api.put(`/events/${eventId}`, formData, { headers: { "Content-Type": "multipart/form-data" } });
     },
@@ -206,16 +265,102 @@ export default function EditEvent() {
               <p className="text-xs text-gray-400 mt-0">{eventFormData.description.length}</p>
             </div>
 
-            {/* Dates */}
-            <label htmlFor="eventDate" className="block text-gray-400 text-xs">
-              Start Date and Time*
-              <input type="datetime-local" name="eventDate" value={eventFormData.eventDate} onChange={handleChange} className="block p-2 mt-1 rounded bg-zinc-800" required/>
-            </label>
+            {/* Multi-Day Toggle */}
+            <div className="mb-4">
+              <label htmlFor="isMultiDayEvent" className="block text-sm text-gray-400">
+                Is this a multi-day event?
+              </label>
+              <select
+                id="isMultiDayEvent"
+                name="isMultiDayEvent"
+                value={eventFormData.isMultiDayEvent ? "true" : "false"}
+                onChange={handleChange}
+                className="w-full p-2 mt-1 rounded bg-zinc-800"
+              >
+                <option value="false">No (Single Day)</option>
+                <option value="true">Yes (Multi-Day)</option>
+              </select>
+            </div>
 
-            <label htmlFor="eventEndTime" className="block text-gray-400 text-xs">
-              End Time*
-              <input type="datetime-local" name="eventEndTime" value={eventFormData.eventEndTime} onChange={handleChange} className="block p-2 mt-1 rounded bg-zinc-800"/>
-            </label>
+            {/* Dates */}
+            {!eventFormData.isMultiDayEvent ? (
+              <>
+                <label htmlFor="eventDate" className="block text-gray-400 text-xs">
+                  Start Date and Time*
+                  <input type="datetime-local" name="eventDate" value={eventFormData.eventDate} onChange={handleChange} className="block p-2 mt-1 w-full rounded bg-zinc-800" style={{ colorScheme: "dark" }} required/>
+                </label>
+
+                <label htmlFor="eventEndTime" className="block text-gray-400 text-xs">
+                  End Time*
+                  <input type="datetime-local" name="eventEndTime" value={eventFormData.eventEndTime} onChange={handleChange} className="block p-2 mt-1 w-full rounded bg-zinc-800" style={{ colorScheme: "dark" }}/>
+                </label>
+              </>
+            ) : (
+              <div className="space-y-4 border border-zinc-700 p-4 rounded bg-zinc-800/50">
+                <p className="text-sm font-semibold text-gray-300">Multi-Day Schedule</p>
+                {eventFormData.eventDates.map((day, idx) => (
+                  <div key={idx} className="space-y-2 border-b border-zinc-700 pb-4">
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-space-accent font-medium">Day {idx + 1}</p>
+                      {idx > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => removeEventDate(idx)}
+                          className="text-xs text-red-500 hover:text-red-400"
+                        >
+                          Remove Day
+                        </button>
+                      )}
+                    </div>
+                    <label className="block text-gray-400 text-xs">
+                      Date*
+                      <input
+                        type="date"
+                        name={`eventDates-${idx}-date`}
+                        value={day.date}
+                        onChange={handleChange}
+                        className="block p-2 w-full mt-1 rounded bg-zinc-800"
+                        style={{ colorScheme: "dark" }}
+                        required
+                      />
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="block text-gray-400 text-xs w-1/2">
+                        Start Time (IST)*
+                        <input
+                          type="time"
+                          name={`eventDates-${idx}-startTime`}
+                          value={day.startTime}
+                          onChange={handleChange}
+                          className="block p-2 w-full mt-1 rounded bg-zinc-800"
+                          style={{ colorScheme: "dark" }}
+                          required
+                        />
+                      </label>
+                      <label className="block text-gray-400 text-xs w-1/2">
+                        End Time (IST)*
+                        <input
+                          type="time"
+                          name={`eventDates-${idx}-endTime`}
+                          value={day.endTime}
+                          onChange={handleChange}
+                          className="block p-2 w-full mt-1 rounded bg-zinc-800"
+                          style={{ colorScheme: "dark" }}
+                          required
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addEventDate}
+                  className="text-sm text-space-accent underline"
+                >
+                  + Add another day
+                </button>
+              </div>
+            )}
 
             {/* Location */}
             <div>
@@ -278,10 +423,16 @@ export default function EditEvent() {
             </div>
 
             {!eventFormData.isFree && (
-              <div>
-                <label htmlFor="fee" className="block text-sm text-gray-400 mb-1">Fee Amount (₹) *</label>
-                <input name="fee" type="number" value={eventFormData.fee} onChange={handleChange} min={1} placeholder="Fee Amount (₹)" className="w-full p-2 rounded bg-zinc-800" required/>
-              </div>
+              <>
+                <div>
+                  <label htmlFor="fee" className="block text-sm text-gray-400 mb-1">Fee Amount (₹) *</label>
+                  <input name="fee" type="number" value={eventFormData.fee} onChange={handleChange} min={1} placeholder="Fee Amount (₹)" className="w-full p-2 rounded bg-zinc-800" required/>
+                </div>
+                <div>
+                  <label htmlFor="upiId" className="block text-sm text-gray-400 mb-1 mt-4">UPI ID (To receive payments) *</label>
+                  <input name="upiId" type="text" value={eventFormData.upiId} onChange={handleChange} placeholder="yourname@bank" className="w-full p-2 rounded bg-zinc-800" required/>
+                </div>
+              </>
             )}
 
             {/* Ticket Required Toggle */}

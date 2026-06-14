@@ -10,10 +10,14 @@ const RegisterButton = ({
   toast,
 }) => {
   const normalizeUserId = (id) => (id ? String(id) : null)
-  const alreadyRegistered = event.registeredUsers?.some((e) => {
+  
+  const userRegistration = event.registeredUsers?.find((e) => {
     const registeredUserId = normalizeUserId(e?.user?._id || e?.user)
     return registeredUserId === normalizeUserId(userInfo?.user?._id)
   })
+
+  const alreadyRegistered = !!userRegistration;
+  const regStatus = userRegistration?.status;
 
   // Check if registration is closed
   if (!event.isRegistrationOpen) {
@@ -33,6 +37,8 @@ const RegisterButton = ({
       // Allow unregister if free event
       if (event.isFree) {
         handleUnregister(userInfo?.user?._id, event._id);
+      } else if (regStatus === 'payment_not_found') {
+        handlePaidRegister(userInfo?.user?._id, event);
       }
     } else {
       if (
@@ -56,14 +62,18 @@ const RegisterButton = ({
   const buttonClass = alreadyRegistered
     ? event.isFree
       ? "bg-space-purple/30 hover:bg-space-purple/50"
-      : "bg-gray-500 cursor-not-allowed"
+      : regStatus === 'pending'
+      ? "bg-yellow-600 cursor-not-allowed"
+      : regStatus === 'payment_not_found'
+      ? "bg-red-600 hover:bg-red-700"
+      : "bg-green-600 cursor-not-allowed" // approved
     : event.seatCapacity && (event.attendeeCount ?? 0) >= event.seatCapacity
     ? "bg-gray-600 cursor-not-allowed"
     : "bg-space-accent hover:bg-space-accent/80";
 
   // Decide if button should be disabled
   const buttonDisabled =
-    (!event.isFree && alreadyRegistered) ||
+    (!event.isFree && alreadyRegistered && (regStatus === 'pending' || regStatus === 'approved')) ||
     (event.seatCapacity &&
       (event.attendeeCount ?? 0) >= event.seatCapacity &&
       !alreadyRegistered);
@@ -71,8 +81,12 @@ const RegisterButton = ({
   // Button label logic
   const getButtonLabel = () => {
     if (loadingEventId === event._id) return <Spinner />;
-    if (alreadyRegistered)
-      return event.isFree ? "Unregister" : "Registered";
+    if (alreadyRegistered) {
+      if (event.isFree) return "Unregister";
+      if (regStatus === 'pending') return "Being Verified";
+      if (regStatus === 'payment_not_found') return "Payment Not Found - Try Again";
+      return "Registered";
+    }
     if (
       event.seatCapacity &&
       (event.attendeeCount ?? 0) >= event.seatCapacity

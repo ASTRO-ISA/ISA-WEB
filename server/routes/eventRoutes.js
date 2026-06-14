@@ -87,10 +87,11 @@ router
     eventController.updateEvent
   )
 
-// slug-based endpoints (must come after specific endpoints to avoid shadowing)
-router.route('/:slug/registrations').get(authenticateToken, eventController.getEventRegistrations)
-router.route('/:slug/download-attendees').get(authenticateToken, eventController.downloadEventAttendees)
-router.route('/:slug/download-scanner-sheet').get(authenticateToken, eventController.downloadScannerSheet)
+// explicit endpoints (no parameters first)
+// registration-specific endpoints
+router.route('/event-registrations/:slug').get(authenticateToken, eventController.getEventRegistrations)
+router.route('/download-attendees/:slug').get(authenticateToken, eventController.downloadEventAttendees)
+router.route('/download-scanner-sheet/:slug').get(authenticateToken, eventController.downloadScannerSheet)
 
 // public catch-all (must be LAST)
 // /:slug matches any single path segment — if it were earlier, it would

@@ -395,7 +395,7 @@ const EventDetails = () => {
 
   const downloadRegisteredUsers = async () => {
     try {
-      const res = await api.get(`/events/${slug}/download-attendees`, {
+      const res = await api.get(`/events/download-attendees/${slug}`, {
         responseType: 'blob',
       });
 

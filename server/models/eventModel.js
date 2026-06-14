@@ -20,7 +20,13 @@ const eventSchema = new mongoose.Schema({
   },
   eventDate: {
     type: Date,
-    required: [true, 'You need to specify the event date']
+    required: [true, 'You need to specify the event date'],
+    validate: {
+      validator: function (value) {
+        return value > Date.now();
+      },
+      message: 'Event date must be in the future'
+    }
   },
   location: {
     type: String,
@@ -111,6 +117,21 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isMultiDayEvent: {
+    type: Boolean,
+    default: false
+  },
+  eventDates: [
+    {
+      date: { type: Date },
+      startTime: { type: String },
+      endTime: { type: String }
+    }
+  ],
+  upiId: {
+    type: String,
+    trim: true
+  },
   fee: {
     type: Number,
     min: [0, 'Fee cannot be negative'],
@@ -123,6 +144,10 @@ const eventSchema = new mongoose.Schema({
       },
       message: 'Paid events must have a valid fee greater than 0'
     }
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
   }
 })
 

@@ -1,4 +1,5 @@
 const User = require('../models/userModel')
+const AuditLog = require('../models/auditLogModel')
 
 //create admin
 exports.createAdmin = async (req, res) => {
@@ -90,6 +91,35 @@ exports.updateAdmin = async (req, res) => {
       status: 'success',
       message: 'Admin updated successfully',
       data: updatedAdmin
+    })
+  } catch (error) {
+    res.status(500).json({ status: 'fail', message: error.message })
+  }
+}
+
+// Get all audit logs with pagination
+exports.getAllAuditLogs = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1
+    const limit = parseInt(req.query.limit, 10) || 20
+    const skip = (page - 1) * limit
+
+    const totalLogs = await AuditLog.countDocuments()
+    const logs = await AuditLog.find()
+      .populate('userId', 'name email role')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+
+    res.status(200).json({
+      status: 'success',
+      data: logs,
+      pagination: {
+        total: totalLogs,
+        page,
+        pages: Math.ceil(totalLogs / limit),
+      }
     })
   } catch (error) {
     res.status(500).json({ status: 'fail', message: error.message })

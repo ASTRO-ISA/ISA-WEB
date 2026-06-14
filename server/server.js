@@ -23,9 +23,11 @@ mongoose
 
 // node-cron jobs (to auto delete)
 // require('./utils/cron/eventCleanup') // to cleanup completed events
-require('./utils/cron/userPotdCleanup') // to cleanup user submitted images for featured potd
-require('./utils/cron/rejectedCleanup') // to cleanup rejected blog, blog suggestions, events
+// require('./utils/cron/userPotdCleanup') // to cleanup user submitted images for featured potd
+// require('./utils/cron/rejectedCleanup') // to cleanup rejected blog, blog suggestions, events
 require('./utils/cron/statusUpdator') // to update the status of events and webinars - past/completed
+// require('./utils/cron/dailyReportJob') // to send daily registration reports to organizers
+require('./utils/cron/backupJob') // to backup events and registrations every 6 hours
 require('./utils/cron/payment')
 
 // start the server

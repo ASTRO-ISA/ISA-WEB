@@ -43,7 +43,7 @@ const Events = () => {
   const fetchEvents = async () => {
     try {
       const res = await api.get("/events/");
-      setEvents(res.data);
+      setEvents(Array.isArray(res.data) ? res.data : []);
       setLoading(false);
     } catch (err) {
       console.error("Something went wrong fetching events.");
@@ -152,7 +152,7 @@ const Events = () => {
       try {
         setLoading(true);
         const res = await api.get("/launches");
-        setLaunches(res.data);
+        setLaunches(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         console.error("Error fetching launches from api", err);
       } finally {

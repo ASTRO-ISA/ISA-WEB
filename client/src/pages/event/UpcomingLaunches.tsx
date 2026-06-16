@@ -7,7 +7,8 @@ import FormatTime from "@/components/ui/FormatTime";
 const UpcomingLaunches = ({ launches }) => {
   const [showAll, setShowAll] = useState(false);
   const [failedImageIds, setFailedImageIds] = useState([]);
-  const validLaunches = launches.filter(
+  const safeLaunches = Array.isArray(launches) ? launches : [];
+  const validLaunches = safeLaunches.filter(
     (launch) => !failedImageIds.includes(launch.id || launch.name)
   );
 
@@ -82,7 +83,7 @@ const UpcomingLaunches = ({ launches }) => {
             )}
 
             {/* View More / Less Buttons */}
-            {launches.length > 6 && (
+            {safeLaunches.length > 6 && (
               <div className="flex-shrink-0 w-72 flex items-center justify-center snap-start">
                 <button
                   onClick={() => setShowAll(!showAll)}

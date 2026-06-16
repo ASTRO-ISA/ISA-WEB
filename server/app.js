@@ -31,19 +31,30 @@ app.set('trust proxy', 1)
 // middlewares
 app.use(helmet())
 
+// Build allowed origins list from env variables
 const allowedOrigins = [
   process.env.ORIGIN_LOCALHOST,
-  process.env.ORIGIN_FRONTEND
-]
+  process.env.ORIGIN_FRONTEND,
+  // Support a comma-separated list for additional origins
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
+].filter(Boolean) // remove undefined/empty entries
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true)
-      } else {
-        callback(new Error('Not allowed by CORS'))
+      // Allow requests with no origin (server-to-server, curl, mobile apps, etc.)
+      if (!origin) return callback(null, true)
+
+      // Check exact match against allowed origins
+      if (allowedOrigins.includes(origin)) return callback(null, true)
+
+      // Allow any Vercel preview/deployment URL for this project
+      if (/^https:\/\/isa-website-24m1[a-z0-9-]*\.vercel\.app$/.test(origin)) {
+        return callback(null, true)
       }
+
+      console.warn(`CORS blocked origin: ${origin}`)
+      callback(new Error('Not allowed by CORS'))
     },
     credentials: true
   })

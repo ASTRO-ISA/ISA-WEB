@@ -1,4 +1,5 @@
 import Spinner from "@/components/ui/Spinner";
+import { useNavigate } from "react-router-dom";
 
 const RegisterButton = ({
   event,
@@ -9,6 +10,7 @@ const RegisterButton = ({
   handlePaidRegister,
   toast,
 }) => {
+  const navigate = useNavigate();
   const normalizeUserId = (id) => (id ? String(id) : null)
   
   const userRegistration = event.registeredUsers?.find((e) => {
@@ -33,6 +35,16 @@ const RegisterButton = ({
 
   // Handle click logic
   const handleClick = () => {
+    if (!userInfo?.user) {
+      toast({
+        title: "Login Required",
+        description: "Please login first to register for the event.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
     if (alreadyRegistered) {
       // Allow unregister if free event
       if (event.isFree) {

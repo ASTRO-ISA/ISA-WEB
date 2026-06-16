@@ -54,7 +54,7 @@ const Signup = ({ url = "/auth/signup" }) => {
       // console.error("Something went wrong", err);
       toast({
         title: "Something went wrong",
-        description: err.response.data.message,
+        description: err?.response?.data?.message || "Signup failed. Please try again.",
         variant: "destructive",
       });
       setSigningIn(false);

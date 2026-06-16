@@ -9,19 +9,23 @@ const signToken = (id) => {
 exports.createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id)
 
+  const isProduction = process.env.NODE_ENV === 'production'
+
   const cookieOptions = {
     expires: new Date(
       Date.now() + process.env.COOKIE_EXPIRES * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    // specifying the parent domain which will use the cookie
-    domain:
-      process.env.NODE_ENV === 'production'
-        ? process.env.COOKIE_DOMAIN // for production
-        : 'localhost', // for local dev
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction,
+    partitioned: isProduction,
   }
-  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true
+
+  // Only set domain in production if COOKIE_DOMAIN is configured.
+  // In development, omit domain so the browser defaults to the request hostname.
+  if (isProduction && process.env.COOKIE_DOMAIN) {
+    cookieOptions.domain = process.env.COOKIE_DOMAIN
+  }
 
   res.cookie('jwt', token, cookieOptions)
 

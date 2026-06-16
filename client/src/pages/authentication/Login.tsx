@@ -38,11 +38,6 @@ const Login = ({ redirectTo }: { redirectTo?: string }) => {
       navigate(redirectTo || "/");
     } catch (err) {
       setLoggingIn(false);
-      // console.error("Login error:", err);
-      toast({
-        description: err.response.data.message,
-        variant: "destructive"
-      })
 
       if (err.response && err.response.status === 403) {
         // redirect to OTP page with email
@@ -55,7 +50,7 @@ const Login = ({ redirectTo }: { redirectTo?: string }) => {
       } else {
         toast({
           title: "Login failed",
-          description: "Invalid credentials",
+          description: err?.response?.data?.message || "Invalid credentials. Please try again.",
           variant: "destructive",
         });
       }

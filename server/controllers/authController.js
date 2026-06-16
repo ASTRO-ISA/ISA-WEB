@@ -76,16 +76,21 @@ exports.login = async (req, res) => {
 }
 
 exports.logout = async (req, res) => {
-  res.cookie('jwt', '', {
-    // setting the cookie to empty
+  const isProduction = process.env.NODE_ENV === 'production'
+
+  const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    domain:
-      process.env.NODE_ENV === 'production'
-        ? process.env.COOKIE_DOMAIN // for production
-        : 'localhost', // for local dev
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    partitioned: isProduction,
     expires: new Date(0)
-  })
+  }
+
+  if (isProduction && process.env.COOKIE_DOMAIN) {
+    cookieOptions.domain = process.env.COOKIE_DOMAIN
+  }
+
+  res.cookie('jwt', '', cookieOptions)
   res.status(200).json({ status: 'success', message: 'Logged out' })
 }
 

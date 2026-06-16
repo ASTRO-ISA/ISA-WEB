@@ -1,4 +1,5 @@
 import Spinner from "@/components/ui/Spinner";
+import { useNavigate } from "react-router-dom";
 
 const WebinarRegisterButton = ({
   webinar,
@@ -12,6 +13,7 @@ const WebinarRegisterButton = ({
   isUpcoming,
   toast,
 }: any) => {
+  const navigate = useNavigate();
   const normalizeUserId = (id) => (id ? String(id) : null);
   const alreadyRegistered = webinar.attendees?.some((e) => {
     const registeredUserId = normalizeUserId(e?.user?._id || e?.user);
@@ -50,6 +52,16 @@ const WebinarRegisterButton = ({
 
   // Handle registration logic (if registration IS required)
   const handleClick = () => {
+    if (!userInfo?.user) {
+      toast({
+        title: "Login Required",
+        description: "Please login first to register for this webinar.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
     if (alreadyRegistered) {
       if (webinar.isFree) {
         handleUnregister(userInfo?.user?._id, webinar._id);

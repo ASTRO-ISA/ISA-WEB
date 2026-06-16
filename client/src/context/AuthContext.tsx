@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async () => {
     try {
-      await api.get("/users/logout");
+      await api.get("/auth/logout");
       queryClient.invalidateQueries({ queryKey: ["user-info"] });
     } catch (err) {
       console.error("Logout failed", err);

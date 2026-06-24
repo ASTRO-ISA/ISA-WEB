@@ -42,6 +42,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { HelmetProvider } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 import ReactGA from "react-ga4";
+import Maintenance from "./pages/Maintenance";
 
 const queryClient = new QueryClient();
 
@@ -68,68 +69,74 @@ const App = () => {
     };
   }, []);
 
-  const TRACKING_ID = "G-283ZJ06KG0"; 
+  const TRACKING_ID = "G-283ZJ06KG0";
   ReactGA.initialize(TRACKING_ID);
   function RouteChangeTracker() {
     const location = useLocation();
-  
+
     useEffect(() => {
       ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
     }, [location]);
-  
+
     return null; // No UI needed — just for tracking
+  }
+
+  const isMaintenanceMode = true;
+  
+  if (isMaintenanceMode) {
+    return <Maintenance />;
   }
 
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-        <RouteChangeTracker />
-          <ScrollToTop />
-          <Navbar />
-          <Routes>
-            
-            {/* These are private routes only accessible after login. */}
-            <Route element={<PrivateRoute />}>
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/events/edit/:slug" element={<EditEvent />} />
-              <Route path="/events/manage/:slug" element={<ManageRegistrations />} />
-              <Route path="/blogs/edit/:slug" element={<EditBlog />} />
-              <Route path="/events/scanner/:slug" element={<QRScannerPage />} />
-              <Route path="/payment-status" element={<PaymentStatus />} />
-            </Route>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <RouteChangeTracker />
+            <ScrollToTop />
+            <Navbar />
+            <Routes>
 
-            {/* These are public routes accessible without login. */}
-            <Route path="/" element={<Index />} />
-            <Route path="/blogs" element={<Blog />} />
-            <Route path="/write" element={<WriteBlog />} />
-            <Route path="/upload-paper" element={<UploadResearchPaper />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/training" element={<Training />} />
-            <Route path="/webinars" element={<Webinars />} />
-            <Route path="/webinars/:slug" element={<WebinarDetail />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<CreateAccount />} />
-            <Route path="terms-and-conditions" element={<TermsAndConditions />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/otp-verification/:email" element={<OtpVerification />} />
-            <Route path="/blogs/:slug" element={<BlogDetail />} />
-            <Route path="/host-event" element={<CreateEvent />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/upload-pic" element={<PotdPicsUpload />} />
-            <Route path="/events/:slug" element={<EventDetails />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Footer />
-        </BrowserRouter>
-      </TooltipProvider>
+              {/* These are private routes only accessible after login. */}
+              <Route element={<PrivateRoute />}>
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/events/edit/:slug" element={<EditEvent />} />
+                <Route path="/events/manage/:slug" element={<ManageRegistrations />} />
+                <Route path="/blogs/edit/:slug" element={<EditBlog />} />
+                <Route path="/events/scanner/:slug" element={<QRScannerPage />} />
+                <Route path="/payment-status" element={<PaymentStatus />} />
+              </Route>
+
+              {/* These are public routes accessible without login. */}
+              <Route path="/" element={<Index />} />
+              <Route path="/blogs" element={<Blog />} />
+              <Route path="/write" element={<WriteBlog />} />
+              <Route path="/upload-paper" element={<UploadResearchPaper />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/training" element={<Training />} />
+              <Route path="/webinars" element={<Webinars />} />
+              <Route path="/webinars/:slug" element={<WebinarDetail />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<CreateAccount />} />
+              <Route path="terms-and-conditions" element={<TermsAndConditions />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/otp-verification/:email" element={<OtpVerification />} />
+              <Route path="/blogs/:slug" element={<BlogDetail />} />
+              <Route path="/host-event" element={<CreateEvent />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/upload-pic" element={<PotdPicsUpload />} />
+              <Route path="/events/:slug" element={<EventDetails />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Footer />
+          </BrowserRouter>
+        </TooltipProvider>
       </HelmetProvider>
     </QueryClientProvider>
   );

@@ -23,7 +23,7 @@ const webinarRouter = require('./routes/webinarRoutes.js')
 const newsletterRouter = require('./routes/newsletterRoutes.js')
 const userPicsPotdRouter = require('./routes/userPicsPotdRoutes.js')
 const superAdminRouter = require('./routes/superAdminRoutes.js')
-const paymentRouter = require('./routes/paymentRoutes.js')
+// const paymentRouter = require('./routes/paymentRoutes.js')
 const qrRouter = require('./routes/qrRoutes.js')
 
 app.set('trust proxy', 1)
@@ -84,7 +84,7 @@ app.use('/api/v1/blogs/featured', featuredRouter)
 app.use('/api/v1/webinars', webinarRouter)
 app.use('/api/v1/newsletter', newsletterRouter)
 app.use('/api/v1/user-potd-pics', userPicsPotdRouter)
-app.use('/api/v1/phonepe', paymentRouter)
+// app.use('/api/v1/phonepe', paymentRouter)
 app.use('/api/v1/qr', qrRouter)
 
 app.get('/', (req, res) => {

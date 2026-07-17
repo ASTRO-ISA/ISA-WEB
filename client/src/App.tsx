@@ -81,7 +81,7 @@ const App = () => {
     return null; // No UI needed — just for tracking
   }
 
-  const isMaintenanceMode = true;
+  const isMaintenanceMode = false;
   
   if (isMaintenanceMode) {
     return <Maintenance />;
